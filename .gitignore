@@ -1,0 +1,9 @@
+# Review and analysis artifacts — generated output, not source
+artifacts/
+
+# OS / editor noise
+.DS_Store
+*.swp
+*.swo
+__pycache__/
+*.pyc

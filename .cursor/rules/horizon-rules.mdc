@@ -1,0 +1,6 @@
+---
+description: Horizon review workflow behavioral rules
+alwaysApply: true
+---
+
+@../../workflows/horizon-review/rules.md
