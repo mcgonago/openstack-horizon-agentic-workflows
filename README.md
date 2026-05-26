@@ -25,30 +25,28 @@ cd openstack-horizon-agentic-workflows
 
 ### Step 2 — Open the repository in Cursor
 
-Open the cloned folder as a project in Cursor (**File → Open Folder**).
+1. Open the Cursor app
+2. Select **File → Open Folder** and choose the `openstack-horizon-agentic-workflows` folder you cloned
 
-The skills and rules are auto-discovered by Cursor via `.agents/skills/` and `.cursor/rules/`.
-No additional configuration is needed for basic use.
+The skills and rules are auto-discovered by Cursor from `.agents/skills/` and `.cursor/rules/` — no additional configuration needed.
 
 ### Step 3 — Run a review
 
-Open the Cursor agent chat (default shortcut: **Ctrl+L** / **Cmd+L**, then switch to Agent mode) and type:
+1. Press **Ctrl+L** (Windows/Linux) or **Cmd+L** (Mac) to open the agent chat
+2. Make sure the mode selector says **Agent** — if it shows *Ask* or *Edit*, click it and switch to **Agent**
+3. Type the review command, replacing `NNNNNN` with the Gerrit change number:
+
+```
+/horizon-code-review NNNNNN
+```
+
+You can also pass a full URL:
 
 ```
 /horizon-code-review https://review.opendev.org/c/openstack/horizon/+/NNNNNN
 ```
 
-Replace `NNNNNN` with the Gerrit change number. You can also pass:
-
-```
-/horizon-code-review 990065
-```
-
-The agent fetches the patch from Gerrit, analyses it, and writes the result to:
-
-```
-artifacts/horizon-review/code-990065.md
-```
+The agent fetches the patch from Gerrit, analyses it, and writes the result to `artifacts/horizon-review/code-NNNNNN.md`.
 
 ---
 
