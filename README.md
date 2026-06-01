@@ -1,6 +1,6 @@
 # OpenStack Horizon Agentic Workflows
 
-AI-assisted workflows for OpenStack Horizon development. Currently includes a code review workflow that analyses Horizon Gerrit patches for intent correctness, plugin-API stability, test coverage, and Horizon coding conventions.
+AI-assisted workflows for OpenStack Horizon development. Includes a code review workflow that analyses Horizon Gerrit patches for intent correctness, plugin-API stability, test coverage, and Horizon coding conventions, and a support case investigation workflow for diagnosing customer-reported Horizon issues.
 
 Supports **Cursor**, **Claude Code**, and the **Ambient Code Platform (ACP)**.
 
@@ -11,6 +11,7 @@ Supports **Cursor**, **Claude Code**, and the **Ambient Code Platform (ACP)**.
 | Workflow | Skill command | What it does |
 |---|---|---|
 | `horizon-review` | `/horizon-code-review` | Reviews a Horizon Gerrit patch |
+| `support-case` | `/support-case-investigation` | Investigates a Horizon customer support case |
 
 ---
 

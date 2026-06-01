@@ -1,0 +1,1 @@
+../../agents/support-investigator.md

@@ -1,0 +1,6 @@
+---
+description: Support case investigation rules for Horizon
+alwaysApply: true
+---
+
+@../../workflows/support-case/rules.md
