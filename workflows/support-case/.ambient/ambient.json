@@ -1,0 +1,11 @@
+{
+  "name": "support-case-investigation",
+  "description": "Investigate OpenStack Horizon customer support cases",
+  "version": "1.0.0",
+  "skills": ["support-case-investigation"],
+  "agents": ["support-investigator"],
+  "knowledge": [
+    "../../knowledge/support-investigation.md",
+    "../../knowledge/horizon.md"
+  ]
+}
