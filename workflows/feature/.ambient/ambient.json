@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "name": "feature",
+  "description": "Tag-based feature implementation for OpenStack operators",
+  "agents": [
+    {
+      "name": "feature-engineer",
+      "path": "../../agents/feature-engineer.md"
+    }
+  ],
+  "knowledge": [
+    {
+      "name": "horizon",
+      "path": "../../knowledge/horizon.md"
+    }
+  ],
+  "skills": [
+    {
+      "name": "feature",
+      "path": ".claude/skills/feature/SKILL.md"
+    }
+  ]
+}
