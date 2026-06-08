@@ -23,6 +23,15 @@ The user will provide one of:
 - A file path or set of paths to review
 - A Gerrit topic name (e.g. `bp/my-feature`)
 
+### Options
+
+- `--artifacts` — Generate an expanded set of review artifacts (testing
+  guide, design analysis, risk assessment, AI transparency, human handoff)
+  in addition to the standard review. Output is a directory at
+  `artifacts/horizon-review/code-{change-number}/` containing 6 artifacts.
+  See `artifact-profiles.md` in this workflow directory for artifact
+  contracts and required sections.
+
 ## Process
 
 ### 0. Handle Gerrit Topic (if provided)
@@ -131,7 +140,37 @@ If a release note is needed and missing, flag as a **Suggestion** (unless it is 
 - **Django compatibility**: if the change uses a Django API, check if it is compatible with all supported Django versions (see `.zuul.yaml` for the version matrix)
 - **Config options**: new options should have proper help text, types, and defaults; add them to `openstack_dashboard/defaults.py` if applicable
 
+### 9. Generate Expanded Artifacts (if --artifacts)
+
+If the user provided `--artifacts`:
+
+1. Read `artifact-profiles.md` in this workflow directory for the full
+   artifact contracts and required sections
+2. Create the output directory: `artifacts/horizon-review/code-{change-number}/`
+3. Write `review.md` — same content as the standard single-artifact output
+4. Write `design-analysis.md` — use the findings from Steps 3-4 and
+   @horizon-core's assessment. Include before/after code walkthrough,
+   edge case enumeration (minimum 3), and plugin ecosystem impact
+5. Write `testing-guide.md` — generate manual test cases based on:
+   - The specific code changes identified in Step 3
+   - `knowledge/horizon.md` settings checklist (for auth/settings changes)
+   - The testing adequacy assessment from Step 6
+   - Depth rules from `artifact-profiles.md` (full vs minimal)
+6. Write `risk-assessment.md` — formalize the risk findings from Steps 4-8
+   into a structured table. Consult `knowledge/horizon.md` for security
+   settings, performance settings, and plugin stability vectors
+7. Write `what-ai-did.md` — enumerate checks performed, knowledge sources
+   consulted, Gerrit context used, and honest limitations
+8. Write `what-you-do-next.md` — human handoff with concrete next steps
+   based on the verdict
+
+All artifacts use the same context gathered in Steps 0-8. Do NOT re-read
+the code, re-query Gerrit, or re-invoke @horizon-core. Each artifact is
+a different view of the same deep analysis.
+
 ## Output
+
+### Default (no --artifacts)
 
 Write the review to `artifacts/horizon-review/code-{change-number}.md` with this structure:
 
@@ -176,6 +215,23 @@ Write the review to `artifacts/horizon-review/code-{change-number}.md` with this
 |---|---|---|
 | path/to/file.py | Modified | ... |
 ```
+
+### Expanded (--artifacts)
+
+Write the standard review to `artifacts/horizon-review/code-{change-number}.md`
+(backward compatibility — always generated).
+
+Additionally, create a directory at `artifacts/horizon-review/code-{change-number}/`
+and write the 6 artifacts defined in `artifact-profiles.md`:
+
+1. `review.md` — Core review (same content as `code-{change-number}.md`)
+2. `design-analysis.md` — Architecture + edge cases
+3. `testing-guide.md` — Manual test procedures
+4. `risk-assessment.md` — Formal risk table
+5. `what-ai-did.md` — AI transparency
+6. `what-you-do-next.md` — Human handoff
+
+Report to the user which artifacts were generated and their file paths.
 
 ### Writing Style
 

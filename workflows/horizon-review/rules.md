@@ -108,3 +108,45 @@ Before reporting a potential runtime failure (e.g., `None` passed where not expe
 ### Reference In-Tree Documentation
 - Link to `doc/source/contributor/` for Horizon-specific conventions
 - Reference Horizon's own contributor docs rather than duplicating rules here
+
+## Artifact Generation Rules (--artifacts mode)
+
+### Contract Compliance
+
+When generating expanded artifacts with `--artifacts`, follow the contracts
+in `artifact-profiles.md` exactly:
+
+- ALL required sections must be present in each artifact
+- If a required section would be empty (e.g., no nits exist), write
+  "None." — do not omit the section
+- Section headings must match the contract (case-insensitive)
+
+### Self-Contained Artifacts
+
+Each artifact must be readable independently. A reviewer should be able
+to read `risk-assessment.md` without first reading `review.md`.
+Cross-references between artifacts are encouraged ("See design-analysis.md
+for the full edge case analysis") but each must stand alone.
+
+### Honest Limitations
+
+The `what-ai-did.md` artifact must be honest about what was NOT checked.
+If you did not examine CI job logs, say so. If you could not run the
+code, say so. "I did not check X" builds more trust than silence.
+
+### Trivial Change Advisory
+
+If `--artifacts` is requested for a trivial change (< 10 lines, APPROVE
+verdict, 0 blockers, 0 suggestions), generate all artifacts as requested
+but note in `what-ai-did.md`:
+"This change is straightforward. The expanded artifact set provides
+minimal additional value over the standard review."
+
+### Knowledge Source References
+
+When generating `risk-assessment.md` and `testing-guide.md`, explicitly
+reference the relevant sections from `knowledge/horizon.md`:
+- Settings Security Checklist (for auth/settings changes)
+- Performance-Sensitive Settings (for API/performance changes)
+- Plugin API Stability rules (for `horizon/` changes)
+- `@memoized` decorator pattern (for caching-related changes)
