@@ -150,3 +150,41 @@ reference the relevant sections from `knowledge/horizon.md`:
 - Performance-Sensitive Settings (for API/performance changes)
 - Plugin API Stability rules (for `horizon/` changes)
 - `@memoized` decorator pattern (for caching-related changes)
+
+## Status-Aware Review Rules
+
+### Mode Detection
+
+The review mode is auto-detected from Gerrit change status (Step 0.5 in
+SKILL.md). This is NOT a user-provided flag — the skill detects it and
+adapts. When the input is a raw diff or file paths, default to `pre-merge`.
+
+### Severity Reclassification in Post-Merge Mode
+
+In post-merge mode, technical severity is preserved but framing changes:
+
+| Pre-Merge Label | Post-Merge Label | Framing |
+|---|---|---|
+| Blocker | Follow-Up (Critical) | "Should be addressed in a follow-up patch" |
+| Suggestion | Follow-Up (Recommended) | "Consider addressing in a follow-up" |
+| Nit | Nit (unchanged) | "Nit:" prefix preserved |
+
+Do NOT downgrade the technical assessment. If missing tests would have been
+a blocker pre-merge, say so — but frame the action as "file a follow-up bug"
+not "must fix before merge".
+
+### Testing Guide Adaptation
+
+| Pre-Merge | Post-Merge |
+|---|---|
+| "Test before approving" | "Verify in production" |
+| "Prerequisites: dev environment" | "Prerequisites: deployed environment with this change" |
+| "Report results to Gerrit" | "File bugs for any failures found" |
+
+### Handoff Adaptation
+
+| Pre-Merge | Post-Merge |
+|---|---|
+| "Vote on Gerrit" | "Leave retrospective comment (optional)" |
+| "Request changes from author" | "File follow-up bug with specific fix description" |
+| "Coordinate with core reviewers" | "Monitor for related bug reports" |
