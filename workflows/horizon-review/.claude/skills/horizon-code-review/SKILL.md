@@ -47,6 +47,35 @@ If the user provides a **Gerrit topic** instead of a single change:
 
 - **If Gerrit MCP is unavailable**: Ask the user to provide a specific change URL. They can find topic changes at `https://review.opendev.org/q/topic:{name}+project:openstack/horizon`.
 
+### 0.5. Detect Change Status and Set Review Mode
+
+When reviewing a Gerrit change (URL or change number):
+
+1. **Check the change status** from the Gerrit response metadata
+2. **Set the review mode** based on status:
+
+   | Status | Mode | Effect |
+   |---|---|---|
+   | NEW | `pre-merge` | Standard review — findings gate the merge |
+   | MERGED | `post-merge` | Retrospective — findings become follow-up items |
+   | ABANDONED | `historical` | Lessons learned — no action expected |
+
+3. **Report the mode** in the artifact header:
+   - pre-merge: No special note (this is the default)
+   - post-merge: "**Note**: This change is already merged. Findings are
+     framed as follow-up items rather than merge blockers."
+   - historical: "**Note**: This change was abandoned. This review is for
+     historical reference."
+
+When the input is a raw diff, file paths, or local git changes: use
+`pre-merge` mode.
+
+**Mode affects the following throughout the review:**
+- Verdict options (Step 9 / Output)
+- Blocker severity framing (blockers become follow-up items in post-merge)
+- Testing guide framing (test before approving → verify in production)
+- Handoff steps (vote on Gerrit → file follow-up bugs)
+
 ### 1. Gather Context (Before Reading Code)
 
 Build context the way an experienced reviewer would:
@@ -168,6 +197,26 @@ All artifacts use the same context gathered in Steps 0-8. Do NOT re-read
 the code, re-query Gerrit, or re-invoke @horizon-core. Each artifact is
 a different view of the same deep analysis.
 
+**Mode-dependent framing for all artifacts:**
+
+In **post-merge** mode:
+- `review.md`: Blockers section becomes "Follow-Up Items (Would Have Been
+  Blockers)". Findings keep their technical severity but are framed as
+  "should be addressed in a follow-up patch" rather than "must fix before merge".
+- `testing-guide.md`: Framed as "Production Verification" not "Pre-Merge
+  Testing". Test cases verify the change works correctly in deployed
+  environments. Prerequisites include "Access to a deployed environment
+  running the merged code".
+- `risk-assessment.md`: Recommendation uses "Monitor" / "File follow-up" /
+  "Consider revert" instead of "Proceed" / "Block".
+- `what-you-do-next.md`: Immediate Actions focus on filing bugs, verifying
+  in production, and monitoring — not voting on Gerrit.
+
+In **historical** mode:
+- All artifacts are framed as retrospective analysis for learning purposes.
+- `what-you-do-next.md`: Focus on lessons learned and patterns to watch for
+  in future reviews.
+
 ## Output
 
 ### Default (no --artifacts)
@@ -180,23 +229,34 @@ Write the review to `artifacts/horizon-review/code-{change-number}.md` with this
 **Change**: {Gerrit URL}
 **Files**: {count and brief summary of affected areas}
 **Date**: {date}
-**Verdict**: {APPROVE / REQUEST_CHANGES / COMMENT}
+**Verdict**: {mode-dependent — see below}
+**Mode**: {pre-merge / post-merge / historical}
+
+Verdict options by mode:
+- **pre-merge**: APPROVE / REQUEST_CHANGES / COMMENT
+- **post-merge**: POST_MERGE_OK / FOLLOW_UP_NEEDED / COMMENT
+- **historical**: HISTORICAL_OK / HISTORICAL_CONCERNS
 
 ## Summary
 {1-2 sentence summary of what the change does and whether it achieves its stated intent}
+{In post-merge mode, add: "**Note**: This change is already merged. Findings are framed as follow-up items rather than merge blockers."}
 
 ## Review History
 {If Gerrit MCP was available: note whether prior feedback was addressed.}
 {If Gerrit MCP was unavailable: note that prior reviewer comments were not examined — link for manual inspection}
 
-## Blockers
-{Issues that must be fixed before merge. If none, write "None."}
+## Blockers / Follow-Up Items
+{In pre-merge mode: "Blockers" — issues that must be fixed before merge.}
+{In post-merge mode: "Follow-Up Items" — issues that should be addressed in follow-up patches. Preserve technical severity but frame actions as "file follow-up bug" or "submit follow-up patch".}
+{In historical mode: "Historical Concerns" — issues worth noting for future reference.}
+{If none, write "None."}
 
 ### Plugin API Impact
 {Any changes to horizon/ public classes, method signatures, or module paths}
 
 ### Missing Regression Test
 {Bug fixes without a test that would fail without the fix}
+{In post-merge mode: frame as "Follow-up: add regression tests in a follow-up patch"}
 
 ### Intent or Architecture Issues
 {Does the change actually solve the problem? Does it fit Horizon's architecture?}

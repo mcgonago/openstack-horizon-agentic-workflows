@@ -4,6 +4,20 @@ This file defines the artifact contracts for `/horizon-code-review --artifacts`.
 When the agent detects `--artifacts` in the user input, it reads this file
 to determine which artifacts to generate and what each must contain.
 
+## Review Mode
+
+The review mode is auto-detected from Gerrit change status (see SKILL.md
+Step 0.5). Each artifact adapts its framing based on the mode:
+
+| Mode | Gerrit Status | Artifact Framing |
+|---|---|---|
+| `pre-merge` | NEW / OPEN | Standard — findings gate the merge |
+| `post-merge` | MERGED | Retrospective — findings become follow-up items |
+| `historical` | ABANDONED | Lessons learned — no action expected |
+
+Each artifact contract below includes a **Mode Adaptation** subsection
+describing how content changes per mode.
+
 ## Artifact Set
 
 When `--artifacts` is provided, generate ALL of the following artifacts
@@ -39,6 +53,16 @@ single-artifact output (`code-{change-number}.md`).
 ## Files Reviewed
 ```
 
+**Mode Adaptation:**
+
+- **pre-merge**: Verdict from {APPROVE, REQUEST_CHANGES, COMMENT}.
+  Blockers are merge-blocking.
+- **post-merge**: Verdict from {POST_MERGE_OK, FOLLOW_UP_NEEDED, COMMENT}.
+  Blockers section renamed to "Follow-Up Items (Would Have Been Blockers)".
+  Each finding includes a follow-up action: file bug, submit patch, or monitor.
+- **historical**: Verdict from {HISTORICAL_OK, HISTORICAL_CONCERNS}.
+  Blockers section renamed to "Historical Concerns". Framed as lessons learned.
+
 ---
 
 ### 2. design-analysis.md — Design Analysis
@@ -71,6 +95,12 @@ behavior, and what edge cases exist.
   Risk level (Low/Medium/High). Minimum 3 edge cases.
 - **Plugin Ecosystem Impact:** Reference `knowledge/horizon.md` plugin
   API stability rules. If no impact: "No plugin impact."
+
+**Mode Adaptation:**
+
+- **pre-merge / historical**: No change — design analysis is objective.
+- **post-merge**: Add a "Post-Merge Observations" subsection noting any
+  issues discovered that could inform follow-up work.
 
 ---
 
@@ -113,6 +143,17 @@ that CI cannot cover.
 
 - **Automated Validation:** tox commands the reviewer can run
 - **Verification Checklist:** Checkbox list, 8-12 items
+
+**Mode Adaptation:**
+
+- **pre-merge**: Title "Testing Guide". Framed as "test before approving".
+  Prerequisites assume dev/staging environment.
+- **post-merge**: Title "Production Verification Guide". Framed as "verify
+  the merged change works correctly in production". Prerequisites assume
+  access to a deployed environment running the merged code. Test cases focus
+  on confirming correct behavior rather than discovering issues.
+- **historical**: Title "Testing Reference". Framed as "these tests would
+  have been relevant". No urgency.
 
 **Depth rules:**
 
@@ -173,6 +214,15 @@ Generate a MINIMAL testing guide (2-3 test cases) when:
   changes to revert?
 - **Recommendation:** Proceed / Proceed with caution / Block
 
+**Mode Adaptation:**
+
+- **pre-merge**: Recommendation uses "Proceed" / "Proceed with caution" / "Block".
+- **post-merge**: Recommendation uses "No action needed" / "File follow-up
+  bug" / "Consider revert". Risk severity is preserved but actions shift
+  from gating to monitoring.
+- **historical**: Recommendation uses "No action needed" / "Pattern to watch
+  in future reviews".
+
 ---
 
 ### 5. what-ai-did.md — AI Transparency Report
@@ -204,6 +254,11 @@ couldn't check.
 - **Agent Collaboration:** Was @horizon-core invoked? What did it
   contribute?
 
+**Mode Adaptation:**
+
+- All modes: Include the detected review mode and explain why.
+  "Review mode: post-merge (change status: MERGED)."
+
 ---
 
 ### 6. what-you-do-next.md — Human Handoff
@@ -232,3 +287,15 @@ couldn't check.
 - **If Changes Are Needed:** What to tell the patch author, referencing
   specific blockers
 - **Follow-Up Items:** Deferred checks, related changes to watch
+
+**Mode Adaptation:**
+
+- **pre-merge**: Verdict is the Gerrit vote recommendation. Immediate Actions
+  focus on posting to Gerrit, requesting changes, or approving.
+- **post-merge**: Verdict is the retrospective assessment. Immediate Actions
+  focus on: (1) deciding whether to file follow-up bugs, (2) verifying in
+  production, (3) monitoring for related issues. "Posting to Gerrit" section
+  becomes "Posting Retrospective Comment (optional)".
+- **historical**: Verdict is the historical assessment. Immediate Actions
+  focus on: (1) documenting lessons learned, (2) updating review checklists
+  if the change revealed a gap.
