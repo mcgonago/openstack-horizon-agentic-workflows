@@ -1,6 +1,10 @@
 # Review and analysis artifacts — generated output, not source
 artifacts/
 
+# Claude Code settings — supply chain security (never commit to upstream)
+.claude/settings.json
+.claude/settings.local.json
+
 # OS / editor noise
 .DS_Store
 *.swp
