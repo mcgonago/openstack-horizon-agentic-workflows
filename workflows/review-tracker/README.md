@@ -82,6 +82,29 @@ The tracker document contains:
 
 ---
 
+## Dashboard Publishing
+
+To publish the current tracker to the ioshaworkflow dashboard:
+
+```
+/review-tracker 977939 --update-artifact-dashboard
+```
+
+This can be combined with other modes:
+
+```
+/review-tracker 977939 --recheck --update-artifact-dashboard
+```
+
+The publish creates a new run in the dashboard under `REVIEW-TRACKER-977939`. If the
+tracker hasn't changed since the last publish, it reports "Nothing new to publish"
+without creating a duplicate run.
+
+Each publish creates a snapshot: run-001 (initial), run-002 (after first recheck),
+run-003 (after second recheck), etc. The dashboard shows all runs with a selector.
+
+---
+
 ## Related Skills
 
 | Skill | Relationship |

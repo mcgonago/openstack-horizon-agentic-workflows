@@ -110,3 +110,38 @@ Each thread section must include:
 - Quoted comment text and all replies
 - AI assessment (significance, blocking/suggestion/nit, action needed)
 - "Status for {User}" line with specific action
+
+## Dashboard Publishing
+
+### Explicit Publish Only
+
+- NEVER auto-publish to the dashboard after a scan or recheck
+- Only publish when the user explicitly passes `--update-artifact-dashboard`
+- The `--status` flag ignores `--update-artifact-dashboard` (status is read-only, no artifact update)
+
+### Nothing-New Detection
+
+- Always check for changes before creating a new run
+- Use `check_for_new_artifacts()` with the appropriate rename_map
+- If the tracker hasn't changed since the last publish, report "Nothing new to publish" and STOP
+- Do NOT create empty or duplicate runs
+
+### Case ID Convention
+
+- Review tracker cases use `REVIEW-TRACKER-{number}` as the case_id
+- This differs from `REVIEW-{number}` used by horizon-code-review to avoid collision
+- Example: `REVIEW-TRACKER-977939` for tracker, `REVIEW-977939` for code review
+
+### Clickable References
+
+- The "What AI Did" artifact must link knowledge files and agent persona to their source on GitHub
+- Skill profiles provide `repo_url` for constructing these links
+- The `what_ai_did_generator.py` renders `[path](repo_url/path)` when `repo_url` is present
+- All skill profiles in the project must include `repo_url` so references are never bare code spans
+
+### Rename on Publish
+
+- The source artifact `tracker-{number}.md` is published as `tracker.md` in the run directory
+- This enables the skill profile to use a fixed filename for the artifact key
+- The rename is handled by the `--rename` flag on `ingest_artifacts.py`
+- When `rename_map` is provided, only files in the map keys are copied (filters out unrelated trackers)

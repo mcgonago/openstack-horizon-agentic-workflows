@@ -19,6 +19,14 @@ The user will provide one of:
 - A Gerrit change URL (e.g., `https://review.opendev.org/c/openstack/horizon/+/977939`)
 - A change number with `--recheck` flag (incremental update)
 - A change number with `--status` flag (quick summary, no doc update)
+- A change number with `--update-artifact-dashboard` flag (publish to ioshaworkflow dashboard)
+
+The `--update-artifact-dashboard` flag can be combined with other modes:
+
+```
+/review-tracker 977939 --update-artifact-dashboard
+/review-tracker 977939 --recheck --update-artifact-dashboard
+```
 
 ## Process
 
@@ -28,12 +36,17 @@ The user will provide one of:
    - If a full URL: extract the number from the path
    - If a bare number: use directly
 
-2. **Determine mode**:
+2. **Detect modifier flags**:
+   - `--update-artifact-dashboard`: set `publish_after = true` (combinable with other modes)
+
+3. **Determine primary mode**:
    - If `--status` flag: print current header + Open Threads table from existing tracker, STOP
-   - If `--recheck` flag: go to **Recheck Mode** (Step R1)
+     (`--update-artifact-dashboard` is ignored with `--status`)
+   - If `--recheck` flag: go to **Recheck Mode** (Step R1), then **Publish Mode** (Step P1) if `publish_after`
    - Otherwise: check if `artifacts/review-tracker/tracker-{number}.md` exists
-     - If exists: tell the user "Tracker already exists. Use `--recheck` to update, or `--force` to regenerate from scratch."
-     - If not exists: go to **Initial Scan Mode** (Step 1)
+     - If exists AND `publish_after` but no `--recheck`: go to **Publish Mode** (Step P1) directly
+     - If exists AND not `publish_after`: tell the user "Tracker already exists. Use `--recheck` to update, or `--force` to regenerate from scratch."
+     - If not exists: go to **Initial Scan Mode** (Step 1), then **Publish Mode** (Step P1) if `publish_after`
 
 ---
 
@@ -225,6 +238,77 @@ For each detected change:
 7. Update header metadata (patchset, Zuul status)
 
 **Do not** rewrite sections with no changes. **Do not** re-generate AI assessments for unchanged threads.
+
+---
+
+### Publish Mode — Update Artifact Dashboard
+
+This mode publishes the current tracker artifact to the ioshaworkflow dashboard.
+It runs after the primary mode completes (or standalone if the tracker already exists).
+
+#### Step P1: Locate Paths
+
+Compute these paths from the workflow root:
+
+- **Source artifact:** `artifacts/review-tracker/tracker-{number}.md`
+- **Ingest script:** Walk up from the workflow root to find the sibling `ioshaworkflow/` repo,
+  then use `scripts/ingest_artifacts.py`
+- **Dashboard data root:** `{ioshaworkflow_repo}/data/investigations/`
+
+If the source artifact does not exist, report "No tracker artifact found. Run the skill
+without `--update-artifact-dashboard` first." and STOP.
+
+#### Step P2: Check for Changes
+
+Run the change detection. The tracker filename is dynamic (`tracker-977939.md`) but the
+dashboard expects a fixed filename (`tracker.md`), so pass a rename map:
+
+```bash
+cd {ioshaworkflow_repo} && python3 -c "
+import sys; sys.path.insert(0, 'scripts')
+from ingest_artifacts import check_for_new_artifacts
+result = check_for_new_artifacts(
+    'REVIEW-TRACKER-{number}',
+    'review-tracker',
+    skill_type='review-tracker',
+    source_project_variant='openstack-horizon-agentic-workflows-review-tracker',
+    rename_map={'tracker-{number}.md': 'tracker.md'}
+)
+print(result)
+"
+```
+
+If `has_new` is `False`: report the message (e.g., "Nothing new to publish — artifacts
+unchanged since run-002") and STOP. Do not create a duplicate run.
+
+#### Step P3: Ingest
+
+Extract metadata from the tracker document header:
+- **title**: The `**Title:**` line value
+- **summary**: Construct from header: "Gerrit {number}: {title}. {thread_count} threads, PS{ps}, {status}."
+
+Run the ingestion:
+
+```bash
+python3 {ioshaworkflow_repo}/scripts/ingest_artifacts.py \
+    REVIEW-TRACKER-{number} \
+    review-tracker \
+    review-tracker \
+    --title "{title}" \
+    --summary "{summary}" \
+    --skill-type review-tracker \
+    --source-project-variant openstack-horizon-agentic-workflows-review-tracker \
+    --rename "tracker-{number}.md:tracker.md"
+```
+
+#### Step P4: Report
+
+Report to the user:
+- The new run ID (e.g., run-001)
+- The dashboard URL: `http://10.0.151.101:8072/investigations/REVIEW-TRACKER-{number}?run={run_id}`
+- What changed (from the check result message)
+
+---
 
 ## Output
 
