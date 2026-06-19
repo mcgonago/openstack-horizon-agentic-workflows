@@ -11,6 +11,7 @@ Supports **Cursor**, **Claude Code**, and the **Ambient Code Platform (ACP)**.
 | Workflow | Skill command | What it does |
 |---|---|---|
 | `horizon-review` | `/horizon-code-review` | Reviews a Horizon Gerrit patch |
+| `review-tracker` | `/review-tracker` | Tracks Gerrit review comment lifecycle with living documents |
 
 ---
 
@@ -226,23 +227,37 @@ This repository is based on the architecture and design patterns from [sbauza/op
 
 ```
 .agents/skills/
-└── horizon-code-review/           → symlink for Cursor skill discovery
+├── horizon-code-review/           → symlink for Cursor skill discovery
+└── review-tracker/                → symlink for Cursor skill discovery
 .cursor/
-├── agents/horizon-core.md         → symlink for Cursor persona discovery
+├── agents/
+│   ├── horizon-core.md            → symlink for Cursor persona discovery
+│   └── review-tracker.md          → symlink for Cursor persona discovery
 └── rules/horizon-rules.mdc        → always-applied behavioral rules
 agents/
-└── horizon-core.md                Horizon core reviewer persona
+├── horizon-core.md                Horizon core reviewer persona
+└── review-tracker.md              Review tracker persona
 knowledge/
-└── horizon.md                     Horizon project reference (architecture, conventions)
+├── horizon.md                     Horizon project reference (architecture, conventions)
+└── review-tracking.md             Gerrit REST API reference, comment data model
 workflows/
-└── horizon-review/
+├── horizon-review/
+│   ├── .ambient/ambient.json      ACP workflow config
+│   ├── .claude/skills/
+│   │   └── horizon-code-review/
+│   │       └── SKILL.md           Canonical skill definition (all tools read from here)
+│   ├── AGENTS.md                  Model-agnostic project reference
+│   ├── CLAUDE.md                  Claude Code pointer
+│   ├── rules.md                   Behavioral rules for the review agent
+│   └── README.md                  Workflow-level documentation
+└── review-tracker/
     ├── .ambient/ambient.json      ACP workflow config
     ├── .claude/skills/
-    │   └── horizon-code-review/
-    │       └── SKILL.md           Canonical skill definition (all tools read from here)
+    │   └── review-tracker/
+    │       └── SKILL.md           Two-mode skill definition (scan + recheck)
+    ├── artifacts/review-tracker/  Generated tracker outputs
     ├── AGENTS.md                  Model-agnostic project reference
     ├── CLAUDE.md                  Claude Code pointer
-    ├── rules.md                   Behavioral rules for the review agent
+    ├── rules.md                   Accuracy, anchors, change log, recheck rules
     └── README.md                  Workflow-level documentation
-artifacts/                         Generated review outputs (git-ignored)
 ```
