@@ -22,16 +22,22 @@ This document contains rules and guidelines for the Review Tracker workflow agen
 
 ### Required Format
 
-All internal document anchors MUST use:
+Anchors MUST be on their own line with blank lines above and below, so markdown
+renderers treat them as an HTML block (invisible) rather than inline text:
 
-```html
+```markdown
+some previous content
+
 <a name="cmt-xxx-n"></a>
+
+### CMT-XXX-N — Topic — STATUS
 ```
 
+- Do NOT put the anchor inline inside a heading (`### <a name="..."></a>Text`) — many renderers show the raw HTML as visible text
+- Do NOT add anchors to headings that are never linked to — only add them when the document contains a `[link](#anchor-name)` reference
 - Do NOT use `<a id="...">` — GitLab strips `id` attributes from rendered markdown
 - Do NOT use `{#custom-id}` — GitLab does not support Kramdown extension syntax
 - Anchor name must be lowercase, hyphen-separated
-- Anchor must appear on the line immediately before its heading
 
 ### Link Format
 
@@ -110,6 +116,47 @@ Each thread section must include:
 - Quoted comment text and all replies
 - AI assessment (significance, blocking/suggestion/nit, action needed)
 - "Status for {User}" line with specific action
+
+## Patch and Verify Safety
+
+### NEVER-PUSH Rule
+
+The skill NEVER executes any command that publishes changes to a remote repository.
+The following commands are FORBIDDEN in all modes:
+
+- `git review`
+- `git push` (any variant: `--force`, `-u`, bare)
+- `ssh review.opendev.org gerrit review`
+- Any HTTP POST/PUT to Gerrit's review API
+- Any command that submits, approves, or merges a change
+
+The developer MUST review and push manually. The only exception is if the developer
+explicitly writes "push it", "run git review", or equivalent in the conversation.
+
+### No Clobber Rule
+
+If a checkout directory exists and has uncommitted changes:
+
+1. Report the dirty state with `git status --short`
+2. STOP and ask the developer what to do
+3. Do NOT delete, reset, or overwrite the directory
+
+Clean directories at the same patchset may be reused without asking.
+
+### Playwright Safety
+
+- Playwright tests are READ-ONLY against the Horizon UI — they never modify data that
+  cannot be cleaned up (they create and delete a test keypair named `verify-pw-test`)
+- Credentials are read from environment variables, never hardcoded in committed artifacts
+- Generated scripts are saved to artifacts for reproducibility and audit
+- Playwright failure does NOT fail the overall verify — tox results are authoritative
+
+### Tracker Dependency
+
+`--create-patch` REQUIRES an existing tracker artifact with a "What Needs to Change"
+section containing at least one non-strikethrough entry. If the tracker is missing or
+has no actionable entries, STOP with an informative message. Do NOT independently analyze
+Gerrit comments.
 
 ## Dashboard Publishing
 
