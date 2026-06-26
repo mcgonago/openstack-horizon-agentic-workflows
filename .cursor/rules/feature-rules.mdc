@@ -1,0 +1,19 @@
+---
+description: Feature implementation rules for OpenStack operators (tag-based)
+alwaysApply: true
+---
+
+When implementing features for OpenStack operators, use the /feature
+skill with a tag parameter (e.g., /feature tag=pqc).
+
+Tag-specific knowledge is loaded from knowledge/feature-<tag>.md.
+Follow the behavioral rules in workflows/feature/rules.md.
+
+Available tags can be found by listing knowledge/feature-*.md files.
+
+Key constraints:
+- Never push or create PRs without user approval
+- Always run full validation (tag Section 6) before delivery
+- Always follow architecture patterns (tag Section 5)
+- Check ticket status and tier before implementing
+- Tier 1 (central) changes: defer to shared library team
