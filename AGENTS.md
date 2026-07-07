@@ -9,47 +9,71 @@ All content is authored once and discovered by multiple tools through standard c
 | Workflow | Description | Skills |
 |---|---|---|
 | horizon-review | Review Horizon Gerrit patches against project conventions, plugin-API stability, and testing requirements | `/horizon-code-review` |
+| support-case | Investigate Horizon customer support cases using structured investigation methodology | `/support-case-investigation` |
+| triassessment | Quick triage and assessment of Jira tickets with dependency mapping and recommendation | `/triassessment` |
 
 ## Skill Prefix Table
 
 | Prefix | Workflow |
 |---|---|
 | `horizon-` | horizon-review |
+| `support-` | support-case |
+| `tri-` | triassessment |
 
 ## Agent Personas
 
 | Persona | File | Expertise | Used By |
 |---|---|---|---|
 | Horizon Core Reviewer | `agents/horizon-core.md` | Plugin-API stability, Django/Horizon framework, OpenStack API client conventions, testing patterns | horizon-review |
+| Support Case Investigator | `agents/support-investigator.md` | OpenStack upgrades, Horizon architecture, RBAC/policy, cross-service dependencies, must-gather analysis | support-case |
 
 ## Shared Knowledge
 
 | File | Contents |
 |---|---|
 | `knowledge/horizon.md` | Horizon architecture, directory structure, plugin system, API client conventions, testing requirements, review process, commit conventions |
+| `knowledge/support-investigation.md` | Support case investigation methodology, symptom classification, code tracing, version regression, RBAC analysis, failure patterns |
 
 ## Repository Structure
 
 ```
 .agents/
 └── skills/
-    └── horizon-code-review/       → workflows/horizon-review/.claude/skills/horizon-code-review
+    ├── horizon-code-review/           → workflows/horizon-review/.claude/skills/horizon-code-review
+    ├── support-case-investigation/    → workflows/support-case/.claude/skills/support-case-investigation
+    └── triassessment/                 → workflows/triassessment/.claude/skills/triassessment
 .cursor/
 ├── agents/
-│   └── horizon-core.md            → agents/horizon-core.md
+│   ├── horizon-core.md               → agents/horizon-core.md
+│   └── support-investigator.md       → agents/support-investigator.md
 └── rules/
-    └── horizon-rules.mdc          references rules.md
+    ├── horizon-rules.mdc             references rules.md
+    └── support-rules.mdc             support case investigation rules
 agents/
-└── horizon-core.md
+├── horizon-core.md
+└── support-investigator.md
 knowledge/
-└── horizon.md
+├── horizon.md
+└── support-investigation.md
 workflows/
-└── horizon-review/
+├── horizon-review/
+│   ├── .ambient/
+│   │   └── ambient.json
+│   ├── .claude/
+│   │   └── skills/
+│   │       └── horizon-code-review/
+│   │           └── SKILL.md
+│   ├── artifacts/
+│   ├── AGENTS.md
+│   ├── CLAUDE.md
+│   ├── rules.md
+│   └── README.md
+└── support-case/
     ├── .ambient/
     │   └── ambient.json
     ├── .claude/
     │   └── skills/
-    │       └── horizon-code-review/
+    │       └── support-case-investigation/
     │           └── SKILL.md
     ├── artifacts/
     ├── AGENTS.md
