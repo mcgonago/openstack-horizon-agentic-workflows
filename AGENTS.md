@@ -10,6 +10,7 @@ All content is authored once and discovered by multiple tools through standard c
 |---|---|---|
 | horizon-review | Review Horizon Gerrit patches against project conventions, plugin-API stability, and testing requirements | `/horizon-code-review` |
 | support-case | Investigate Horizon customer support cases using structured investigation methodology | `/support-case-investigation` |
+| triassessment | Quick triage and assessment of Jira tickets with dependency mapping and recommendation | `/triassessment` |
 
 ## Skill Prefix Table
 
@@ -17,6 +18,7 @@ All content is authored once and discovered by multiple tools through standard c
 |---|---|
 | `horizon-` | horizon-review |
 | `support-` | support-case |
+| `tri-` | triassessment |
 
 ## Agent Personas
 
@@ -38,7 +40,8 @@ All content is authored once and discovered by multiple tools through standard c
 .agents/
 └── skills/
     ├── horizon-code-review/           → workflows/horizon-review/.claude/skills/horizon-code-review
-    └── support-case-investigation/    → workflows/support-case/.claude/skills/support-case-investigation
+    ├── support-case-investigation/    → workflows/support-case/.claude/skills/support-case-investigation
+    └── triassessment/                 → workflows/triassessment/.claude/skills/triassessment
 .cursor/
 ├── agents/
 │   ├── horizon-core.md               → agents/horizon-core.md
