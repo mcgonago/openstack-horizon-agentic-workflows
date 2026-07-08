@@ -1,0 +1,38 @@
+bridge_version: "1.0"
+bridge_from: review-tracker
+bridge_to: horizon-code-review
+timestamp: "{timestamp}"
+
+source:
+  artifact: "tracker-{review_number}.md"
+  section: "{thread_id}"
+  review_url: "{review_url}"
+  review_number: {review_number}
+  patchset: {patchset}
+
+question:
+  text: "{question_text}"
+  author: "{author}"
+  vote: "{vote}"
+  file: "{file}"
+  line: {line}
+  code_snippet: |
+    {code_snippet}
+
+task:
+  type: code-archaeology
+  objective: |
+    {objective}
+  scope:
+    codebase: openstack/horizon
+    focus_files:
+      - "{file}"
+      - "horizon/middleware.py"
+      - "openstack_dashboard/test/helpers.py"
+    search_patterns:
+      - "{attribute_name}"
+      - "hasattr.*{attribute_name}"
+
+output:
+  path: "bridge-artifacts/{thread_id_lower}-analysis.md"
+  format: markdown

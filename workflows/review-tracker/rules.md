@@ -208,6 +208,27 @@ Gerrit comments.
 - The rename is handled by the `--rename` flag on `ingest_artifacts.py`
 - When `rename_map` is provided, only files in the map keys are copied (filters out unrelated trackers)
 
+### Source of Truth Links
+
+**CRITICAL:** All artifacts MUST be committed to git and rendered pages MUST link to the git source.
+
+- Every artifact rendering route must include a `[src]` link pointing to the GitHub source file
+- NEVER point to dashboard `/raw` endpoints as source — those serve copied data, not the authoritative git source
+- Construct GitHub URLs using the skill profile's `repo_url` field:
+  ```
+  {repo_url}/workflows/{source_workflow}/artifacts/{source_skill_type}/{filename}
+  ```
+- For bridge artifacts:
+  ```
+  {repo_url}/workflows/{source_workflow}/artifacts/{source_skill_type}/bridge-artifacts/{filename}
+  ```
+
+This ensures every rendered page has a direct link to the source of truth .md file in git, making it easy to:
+1. Verify the dashboard content matches what's committed
+2. Edit the source file directly from the dashboard view
+3. Track changes via git history
+4. Share authoritative links (not copies)
+
 ---
 
 ## Bridge Execution Rules

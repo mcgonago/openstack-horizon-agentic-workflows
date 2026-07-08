@@ -1,0 +1,46 @@
+# Bridge Analysis: {thread_id}
+
+**Question:** {question_text}
+
+**Reviewer:** {author}
+**Review:** {review_number}
+**File:** `{file}:{line}`
+
+---
+
+## Investigation
+
+### 1. Where is `{attribute}` set?
+
+**Source:** `{source_file}:{source_line}`
+```python
+{code_snippet}
+```
+
+**Lifecycle:** {lifecycle_description}
+
+### 2. Edge cases where it might be missing
+
+| Scenario | Missing? | Why |
+|----------|----------|-----|
+| Production views | ❌ No | {reason_production} |
+| Unit tests (mocked request) | ✅ Yes | {reason_tests} |
+| Error handlers (500/404) | ❌ No | {reason_errors} |
+
+### 3. Is the defensive check necessary?
+
+**Verdict:** {verdict}
+
+**Evidence:** {evidence}
+
+---
+
+## Suggested Response
+
+> {suggested_response}
+
+---
+
+## References
+
+{references_list}
