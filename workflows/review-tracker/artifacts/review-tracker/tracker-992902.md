@@ -6,7 +6,7 @@
 **Status:** NEW
 **Current Patchset:** 4
 **Zuul:** Verified+1 (PS4 — build succeeded)
-**Files Changed:** 1 (`openstack_dashboard/dashboards/project/key_pairs/views.py`)
+**Files Changed:** 1 ([`openstack_dashboard/dashboards/project/key_pairs/views.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/key_pairs/views.py))
 **Reviewers:** Jan Jasek, Radomir Dopieralski
 
 ---
