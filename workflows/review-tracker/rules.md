@@ -110,17 +110,23 @@ Every recheck that detects changes MUST add a Change Log entry:
 
 ### Clickable URLs
 
-All URLs in tracker documents MUST be rendered as clickable markdown links:
+All URLs and file references in tracker documents MUST be rendered as clickable markdown links:
 
 **Header section:**
 - `**Review:** [https://review.opendev.org/...](https://review.opendev.org/...)` — NOT bare URL
+- `**Files Changed:** 1 ([path/to/file.py:123](https://github.com/openstack/horizon/blob/master/path/to/file.py#L123))` — link to GitHub source with line anchor
+
+**File references anywhere:**
+- Format: `[path/to/file.py:line](https://github.com/openstack/horizon/blob/master/path/to/file.py#Lline)`
+- If no line number: `[path/to/file.py](https://github.com/openstack/horizon/blob/master/path/to/file.py)`
+- Use GitHub line anchors: `#L123` (single line) or `#L123-L456` (range)
 
 **Comment text:**
 - When a comment contains a URL, preserve it as-is (the commenter's formatting)
 - When referencing external resources in AI Assessment, use markdown links
 
 **General rule:**
-- Any URL the tracker generates (review URL, file URLs, etc.) must be a markdown link
+- Any URL or file path the tracker generates must be a clickable markdown link
 - URLs from quoted Gerrit comments are preserved verbatim
 
 ### Thread Section Format

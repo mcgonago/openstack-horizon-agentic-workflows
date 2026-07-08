@@ -166,7 +166,7 @@ Follow this section order exactly:
 **Status:** {status}
 **Current Patchset:** {number}
 **Zuul:** {Verified vote status}
-**Files Changed:** {count} ({brief summary of areas})
+**Files Changed:** {count} ([`file1.py:line`](https://github.com/openstack/horizon/blob/master/file1.py#Lline), [`file2.py`](https://github.com/openstack/horizon/blob/master/file2.py))
 **Reviewers:** {list of reviewers who commented}
 
 ---
