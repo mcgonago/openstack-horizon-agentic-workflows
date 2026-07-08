@@ -1,5 +1,10 @@
-# Review and analysis artifacts — generated output, not source
-artifacts/
+# IMPORTANT: artifacts/ contains source-of-truth .md files that MUST be committed
+# These are AI-analyzed documentation, not disposable generated output
+# They are the authoritative source that the dashboard renders from
+#
+# If you need to ignore specific temporary files, add them explicitly:
+# artifacts/**/*.tmp
+# artifacts/**/*.log
 
 # OS / editor noise
 .DS_Store
