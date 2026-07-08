@@ -108,6 +108,21 @@ Every recheck that detects changes MUST add a Change Log entry:
 6. Comment Statistics (table)
 7. Key Remaining Items Before This Can Merge (table)
 
+### Clickable URLs
+
+All URLs in tracker documents MUST be rendered as clickable markdown links:
+
+**Header section:**
+- `**Review:** [https://review.opendev.org/...](https://review.opendev.org/...)` — NOT bare URL
+
+**Comment text:**
+- When a comment contains a URL, preserve it as-is (the commenter's formatting)
+- When referencing external resources in AI Assessment, use markdown links
+
+**General rule:**
+- Any URL the tracker generates (review URL, file URLs, etc.) must be a markdown link
+- URLs from quoted Gerrit comments are preserved verbatim
+
 ### Thread Section Format
 
 Each thread section must include:
@@ -192,3 +207,42 @@ Gerrit comments.
 - This enables the skill profile to use a fixed filename for the artifact key
 - The rename is handled by the `--rename` flag on `ingest_artifacts.py`
 - When `rename_map` is provided, only files in the map keys are copied (filters out unrelated trackers)
+
+---
+
+## Bridge Execution Rules
+
+### Bridge Opportunity Detection
+
+- ONLY detect bridges when user passes `--deep-dive` flag
+- Use conservative heuristics (false negative OK, false positive BAD)
+- Question must contain: pattern (when/why/how) + code keyword + NOT resolved
+- Never bridge LGTM comments, recheck commands, or resolved threads
+
+### Bridge Context Generation
+
+- Every bridge context MUST include: question, file, line, code_snippet
+- Objective MUST be specific (not generic "analyze this")
+- Search patterns MUST be relevant to the question
+- Focus files MUST include: question file, middleware, test helpers
+
+### Bridge Invocation
+
+- Timeout MUST be 300 seconds (5 minutes max)
+- Subprocess MUST capture stdout + stderr
+- NEVER fail tracker run if bridge fails
+- Log ALL bridge executions to bridge-log.jsonl (success + failure)
+
+### Bridge Incorporation
+
+- Link format: `[Code Analysis](bridge-artifacts/{thread-id}-analysis.md)`
+- Extract Answer Summary (first 3-5 bullets only)
+- Extract Suggested Response (full quote block)
+- Preserve original AI Assessment (don't replace)
+
+### Graceful Degradation
+
+- If bridge timeout: log, mark "analysis unavailable", continue
+- If bridge crash: capture stderr, log, mark "analysis failed", continue
+- If output file missing: log error, mark "no output", continue
+- Tracker ALWAYS completes, bridge failures are non-fatal

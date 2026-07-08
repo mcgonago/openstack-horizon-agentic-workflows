@@ -19,6 +19,7 @@ The user will provide one of:
 - A Gerrit change URL (e.g., `https://review.opendev.org/c/openstack/horizon/+/977939`)
 - A change number with `--recheck` flag (incremental update)
 - A change number with `--status` flag (quick summary, no doc update)
+- A change number with `--deep-dive` flag (bridge to code analysis for reviewer questions)
 - A change number with `--create-patch` flag (check out review, apply fixes from tracker)
 - A change number with `--verify-patch` flag (run tox tests against patched checkout)
 - A change number with `--update-artifact-dashboard` flag (publish to ioshaworkflow dashboard)
@@ -42,6 +43,7 @@ Flags are composable:
    - If a bare number: use directly
 
 2. **Detect modifier flags**:
+   - `--deep-dive`: set `deep_dive = true`
    - `--update-artifact-dashboard`: set `publish_after = true`
    - `--create-patch`: set `create_patch = true`
    - `--verify-patch`: set `verify_patch = true`
@@ -106,6 +108,49 @@ Follow the thread grouping algorithm from the agent persona:
 5. Classify each thread's status using the status classification rules
 6. Write an AI assessment for each thread (significance, blocking/suggestion/nit, action)
 
+#### Step 3.5: Bridge to Code Analysis (if --deep-dive)
+
+**ONLY if user passed `--deep-dive` flag**: Detect code-archaeology questions and generate
+structured research guidance. This provides actionable investigation steps for reviewer questions.
+
+**Pattern to detect:**
+- Contains question words: `when/why/how/is there/under what`
+- Contains code keywords: `attribute/method/function/class/variable/object`
+- Status is not RESOLVED
+
+**For matching threads**, add a structured Deep-Dive Note with specific research guidance:
+
+```markdown
+**Deep-Dive Note:** This appears to be a code-archaeology question.
+
+**Research steps:**
+1. Search for where `{attribute/method}` is set/initialized
+   - Check middleware: `horizon/middleware.py`, `openstack_dashboard/middleware/`
+   - Check context processors, decorators, base classes
+2. Look for similar defensive checks in the codebase
+   - `git grep "hasattr.*{pattern}"`
+   - Count occurrences to determine if this is a common pattern
+3. Consider edge cases:
+   - Unit tests (mocked objects may not run middleware)
+   - Error handlers (500/404 views)
+   - Admin vs. project context
+   - Configuration differences
+
+**Suggested approach:**
+- If check is common (>20 occurrences): Explain it's a standard pattern
+- If check is unique: Investigate why this case is special
+- Check git blame/history for context on why defensive check was added
+```
+
+The research guidance is generated based on:
+- Extracted attribute/method name from the question
+- File context (which file the question was asked about)
+- Common Horizon patterns (middleware, mocking, testing)
+
+**Note:** Full automated bridge to `/horizon-code-review` (with AI-generated ready-to-paste
+responses) is available but requires horizon-code-review skill integration. Current mode
+provides structured manual research guidance.
+
 #### Step 4: Generate Document
 
 Write the full tracker document to `artifacts/review-tracker/tracker-{change-number}.md`.
@@ -115,7 +160,7 @@ Follow this section order exactly:
 ```markdown
 # Review {number} — Live Comment Tracker
 
-**Review:** {gerrit URL}
+**Review:** [{gerrit URL}]({gerrit URL})
 **Title:** {subject}
 **Author:** {owner}
 **Status:** {status}
