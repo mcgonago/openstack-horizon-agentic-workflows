@@ -1,0 +1,96 @@
+name: keypairs
+label: Key Pairs Panel Deangularization
+description: >
+  Verify feature parity when switching the Key Pairs panel
+  from AngularJS to Python/Django.
+
+match_files:
+  - openstack_dashboard/dashboards/project/key_pairs/
+  - openstack_dashboard/defaults.py
+
+environment:
+  devstack_host: "${DEVSTACK_HOST}"
+  admin_user: admin
+  admin_password: "${DEVSTACK_PASSWORD}"
+  horizon_port: 8080
+  # Optional: use virtctl ssh instead of plain SSH (for ITUp VMs)
+  # CLI --virtctl flag overrides enabled: false
+  virtctl:
+    enabled: false
+    vm: horizon-devstack
+    namespace: rhos-dfg-ui--runtime-int
+    identity_file: "~/.ssh/id_ed25519"
+    ssh_user: ubuntu
+
+setup:
+  - "openstack keypair delete verify-seed-key 2>/dev/null || true"
+  - "openstack keypair create verify-seed-key > /dev/null"
+
+cleanup:
+  - "openstack keypair delete verify-seed-key 2>/dev/null || true"
+  - "openstack keypair delete verify-create-ssh 2>/dev/null || true"
+  - "openstack keypair delete verify-create-x509 2>/dev/null || true"
+  - "openstack keypair delete verify-import-ssh 2>/dev/null || true"
+  - "openstack keypair delete verify-import-x509 2>/dev/null || true"
+
+groups:
+  - name: A
+    label: Panel Loading
+    module: panel_loading
+    tests:
+      - page_loads
+      - breadcrumb_visible
+      - table_visible
+      - angular_or_python_detected
+
+  - name: B
+    label: Table Features
+    module: table_features
+    tests:
+      - search_filter
+      - column_headers
+      - row_actions_menu
+      - batch_actions
+      - pagination_controls
+
+  - name: C
+    label: Create Keypair
+    module: create_form
+    tests:
+      - create_ssh_keypair
+      - create_x509_keypair
+      - download_pem
+      - keypair_appears_in_table
+
+  - name: D
+    label: Import Keypair
+    module: import_form
+    tests:
+      - import_ssh_keypair
+      - import_x509_keypair
+      - validation_errors
+
+  - name: E
+    label: Delete Keypair
+    module: delete
+    tests:
+      - delete_single
+      - delete_batch
+      - confirm_dialog
+
+  - name: F
+    label: Detail View
+    module: detail_view
+    tests:
+      - detail_page_loads
+      - detail_shows_fingerprint
+      - detail_shows_public_key
+      - back_navigation
+
+  - name: G
+    label: Inline Expansion
+    module: chevron_rows
+    tests:
+      - chevron_toggle
+      - expanded_content
+      - multiple_expand
