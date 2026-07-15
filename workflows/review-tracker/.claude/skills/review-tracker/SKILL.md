@@ -1344,10 +1344,30 @@ without `--update-artifact-dashboard` first." and STOP.
 
 #### Step P2: Check for Changes
 
-Build the rename map. Start with the tracker, then add patch/verify artifacts if they exist:
+Build the rename map. Start with the tracker, then add patch/verify artifacts if they exist.
+
+**IMPORTANT:** Bridge artifacts from ALL reviews share one directory. The rename_map
+controls which files the ingest script copies. Bridge artifacts MUST be listed explicitly
+with a `bridge-artifacts/` prefix — unlisted files are skipped. This prevents artifacts
+from other reviews bleeding into this review's dashboard entry.
 
 ```python
 rename_map = {'tracker-{number}.md': 'tracker.md'}
+
+# Add bridge artifacts for THIS review only.
+# Scan bridge-artifacts/ for files that belong to this review:
+#   - initial-review-{number}.md  (from Step 0.7 code review bridge)
+#   - {thread-id}-analysis.md     (from --deep-dive, referenced in tracker)
+# To find deep-dive files: parse the tracker for bridge-artifact links.
+bridge_dir = 'artifacts/review-tracker/bridge-artifacts'
+initial_review = f'initial-review-{number}.md'
+if os.path.exists(f'{bridge_dir}/{initial_review}'):
+    rename_map[f'bridge-artifacts/{initial_review}'] = initial_review
+
+# Find deep-dive analysis files referenced from the tracker document
+for link in re.findall(r'bridge-artifacts/([\w-]+-analysis\.md)', tracker_content):
+    if os.path.exists(f'{bridge_dir}/{link}'):
+        rename_map[f'bridge-artifacts/{link}'] = link
 
 # If --create-patch produced a manifest, copy it to artifacts and add to rename_map
 patch_manifest = '{repo_root}/review-{number}-ps{N}/PATCH_MANIFEST.md'
@@ -1393,7 +1413,7 @@ Extract metadata from the tracker document header:
 - **title**: The `**Title:**` line value
 - **summary**: Construct from header: "Gerrit {number}: {title}. {thread_count} threads, PS{ps}, {status}."
 
-Run the ingestion:
+Run the ingestion, passing ALL rename_map entries (including bridge artifacts) via `--rename`:
 
 ```bash
 python3 {ioshaworkflow_repo}/scripts/ingest_artifacts.py \
@@ -1404,8 +1424,12 @@ python3 {ioshaworkflow_repo}/scripts/ingest_artifacts.py \
     --summary "{summary}" \
     --skill-type review-tracker \
     --source-project-variant openstack-horizon-agentic-workflows-review-tracker \
-    --rename "tracker-{number}.md:tracker.md"
+    --rename "tracker-{number}.md:tracker.md,bridge-artifacts/initial-review-{number}.md:initial-review-{number}.md"
 ```
+
+The `--rename` value is a comma-separated list of `src:dst` pairs built from the
+rename_map. Include every `bridge-artifacts/...` entry so the ingest script knows
+which bridge artifacts belong to this review. Unlisted bridge artifacts are skipped.
 
 #### Step P4: Report
 
