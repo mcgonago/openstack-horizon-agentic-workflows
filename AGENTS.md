@@ -11,6 +11,7 @@ All content is authored once and discovered by multiple tools through standard c
 | horizon-review | Review Horizon Gerrit patches against project conventions, plugin-API stability, and testing requirements | `/horizon-code-review` |
 | support-case | Investigate Horizon customer support cases using structured investigation methodology | `/support-case-investigation` |
 | triassessment | Quick triage and assessment of Jira tickets with dependency mapping and recommendation | `/triassessment` |
+| zuul-job | Analyze Zuul CI build failures, classify errors, recommend fix vs recheck vs escalate | `/zuul-job` |
 
 ## Skill Prefix Table
 
@@ -19,6 +20,7 @@ All content is authored once and discovered by multiple tools through standard c
 | `horizon-` | horizon-review |
 | `support-` | support-case |
 | `tri-` | triassessment |
+| `zuul-` | zuul-job |
 
 ## Agent Personas
 
@@ -26,6 +28,7 @@ All content is authored once and discovered by multiple tools through standard c
 |---|---|---|---|
 | Horizon Core Reviewer | `agents/horizon-core.md` | Plugin-API stability, Django/Horizon framework, OpenStack API client conventions, testing patterns | horizon-review |
 | Support Case Investigator | `agents/support-investigator.md` | OpenStack upgrades, Horizon architecture, RBAC/policy, cross-service dependencies, must-gather analysis | support-case |
+| Zuul CI Analyst | `agents/zuul-analyst.md` | Zuul CI failure analysis, error classification, triage decision trees, Horizon CI job knowledge | zuul-job |
 
 ## Shared Knowledge
 
@@ -33,6 +36,7 @@ All content is authored once and discovered by multiple tools through standard c
 |---|---|
 | `knowledge/horizon.md` | Horizon architecture, directory structure, plugin system, API client conventions, testing requirements, review process, commit conventions |
 | `knowledge/support-investigation.md` | Support case investigation methodology, symptom classification, code tracing, version regression, RBAC analysis, failure patterns |
+| `knowledge/zuul-horizon-ci.md` | Horizon CI job taxonomy, known flake patterns, error-to-category mapping, triage decision tree, fix recipes, recheck policy |
 
 ## Repository Structure
 
@@ -41,7 +45,8 @@ All content is authored once and discovered by multiple tools through standard c
 └── skills/
     ├── horizon-code-review/           → workflows/horizon-review/.claude/skills/horizon-code-review
     ├── support-case-investigation/    → workflows/support-case/.claude/skills/support-case-investigation
-    └── triassessment/                 → workflows/triassessment/.claude/skills/triassessment
+    ├── triassessment/                 → workflows/triassessment/.claude/skills/triassessment
+    └── zuul-job/                      → workflows/zuul-job/.claude/skills/zuul-job
 .cursor/
 ├── agents/
 │   ├── horizon-core.md               → agents/horizon-core.md
@@ -51,10 +56,12 @@ All content is authored once and discovered by multiple tools through standard c
     └── support-rules.mdc             support case investigation rules
 agents/
 ├── horizon-core.md
-└── support-investigator.md
+├── support-investigator.md
+└── zuul-analyst.md
 knowledge/
 ├── horizon.md
-└── support-investigation.md
+├── support-investigation.md
+└── zuul-horizon-ci.md
 workflows/
 ├── horizon-review/
 │   ├── .ambient/
@@ -68,18 +75,30 @@ workflows/
 │   ├── CLAUDE.md
 │   ├── rules.md
 │   └── README.md
-└── support-case/
+├── support-case/
+│   ├── .ambient/
+│   │   └── ambient.json
+│   ├── .claude/
+│   │   └── skills/
+│   │       └── support-case-investigation/
+│   │           └── SKILL.md
+│   ├── artifacts/
+│   ├── AGENTS.md
+│   ├── CLAUDE.md
+│   ├── rules.md
+│   └── README.md
+└── zuul-job/
     ├── .ambient/
     │   └── ambient.json
     ├── .claude/
     │   └── skills/
-    │       └── support-case-investigation/
+    │       └── zuul-job/
     │           └── SKILL.md
     ├── artifacts/
+    │   └── zuul-job/
     ├── AGENTS.md
     ├── CLAUDE.md
-    ├── rules.md
-    └── README.md
+    └── rules.md
 AGENTS.md
 CLAUDE.md
 README.md

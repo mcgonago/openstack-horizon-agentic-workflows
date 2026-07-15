@@ -5,8 +5,13 @@ Quick triage and assessment of Jira tickets.
 ## Usage
 
 ```
-/triassessment <TICKET-ID> [--update-artifact-dashboard] [--deep]
+/triassessment <TICKET-ID> [--recheck] [--update-artifact-dashboard] [--deep]
 ```
+
+**Flags:**
+- `--recheck` - Run a fresh assessment on an existing ticket (creates a new run)
+- `--update-artifact-dashboard` - Publish artifacts to ioshaworkflow dashboard
+- `--deep` - Perform deeper analysis with additional context
 
 ## What It Does
 
