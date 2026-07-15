@@ -266,46 +266,194 @@ Follow the thread grouping algorithm from the agent persona:
 
 #### Step 3.5: Bridge to Code Analysis (if --deep-dive)
 
-**ONLY if user passed `--deep-dive` flag**: Detect code-archaeology questions and generate
-structured research guidance. This provides actionable investigation steps for reviewer questions.
+**ONLY if user passed `--deep-dive` flag**: Detect code-archaeology questions from
+reviewer comments and produce actual bridge analysis artifacts with ready-to-paste
+Gerrit responses.
 
-**Pattern to detect:**
-- Contains question words: `when/why/how/is there/under what`
-- Contains code keywords: `attribute/method/function/class/variable/object`
-- Status is not RESOLVED
+This step runs on BOTH initial scan and `--recheck`. On recheck, focus on NEW or
+UNRESOLVED threads that were added since the last run.
 
-**For matching threads**, add a structured Deep-Dive Note with specific research guidance:
+##### 3.5.1: Detect Bridge Opportunities
 
-```markdown
-**Deep-Dive Note:** This appears to be a code-archaeology question.
+For each UNRESOLVED thread, check if it's a code-archaeology question:
 
-**Research steps:**
-1. Search for where `{attribute/method}` is set/initialized
-   - Check middleware: `horizon/middleware.py`, `openstack_dashboard/middleware/`
-   - Check context processors, decorators, base classes
-2. Look for similar defensive checks in the codebase
-   - `git grep "hasattr.*{pattern}"`
-   - Count occurrences to determine if this is a common pattern
-3. Consider edge cases:
-   - Unit tests (mocked objects may not run middleware)
-   - Error handlers (500/404 views)
-   - Admin vs. project context
-   - Configuration differences
+**Heuristic:**
+1. Contains question pattern: `when/why/how/is there/under what/what happens/does it`
+2. Contains code keyword OR references a specific attribute/method/class/variable
+3. Status is NOT RESOLVED
+4. NOT an LGTM comment, recheck command, or CI status report
 
-**Suggested approach:**
-- If check is common (>20 occurrences): Explain it's a standard pattern
-- If check is unique: Investigate why this case is special
-- Check git blame/history for context on why defensive check was added
+**Example matches:**
+- "Is there any case where `self.request` doesn't have the `horizon` attribute?"
+- "Why do we need the `hasattr` check here?"
+- "Under what circumstances would this fail?"
+
+##### 3.5.2: Execute Code Archaeology
+
+For EACH detected bridge opportunity, perform the following research using
+the Horizon checkout from Step 0.6 (`CLONE_DIR`). Execute these steps directly
+— do NOT delegate to another skill.
+
+**B1 — Search codebase** for the attribute/method/pattern in question:
+
+```bash
+git grep -n "{pattern}" -- '*.py'
+git grep -n "hasattr.*{pattern}" -- '*.py'
 ```
 
-The research guidance is generated based on:
-- Extracted attribute/method name from the question
-- File context (which file the question was asked about)
-- Common Horizon patterns (middleware, mocking, testing)
+Collect file paths, line numbers, and surrounding context (±5 lines).
 
-**Note:** Full automated bridge to `/horizon-code-review` (with AI-generated ready-to-paste
-responses) is available but requires horizon-code-review skill integration. Current mode
-provides structured manual research guidance.
+**B2 — Read relevant files.** From grep results, identify the top 5-10 most
+relevant files. Prioritize:
+1. File where the question was asked
+2. Middleware files (`horizon/middleware.py`, `horizon/middleware/base.py`)
+3. Test helpers (`openstack_dashboard/test/helpers.py`)
+4. Base classes and context processors
+
+**B3 — Trace lifecycle.** Build a lifecycle map showing where the
+attribute/object is created, used, and tested:
+
+| Event | File | Line | Description |
+|-------|------|------|-------------|
+| Created | ... | ... | Where it's initialized |
+| Used | ... | ... | Where the code under review references it |
+| Tested | ... | ... | How tests handle it |
+
+**B4 — Identify edge cases.** Check these scenarios:
+
+| Scenario | Missing? | Why |
+|----------|----------|-----|
+| Production views | ? | Middleware behavior |
+| Unit tests (mocked request) | ? | Mock objects may skip middleware |
+| Error handlers (500/404) | ? | Whether middleware already ran |
+| Admin vs. project context | ? | Same or different path |
+
+**B5 — Pattern analysis.** Count occurrences of similar defensive checks:
+
+```bash
+git grep -c "{defensive_pattern}" -- '*.py'
+```
+
+Determine if this is a common pattern (>20 occurrences) or rare.
+
+**B6 — Formulate verdict.** Based on lifecycle + edge cases + pattern frequency:
+- **NECESSARY** — the check prevents real failures
+- **UNNECESSARY** — the check is redundant given framework guarantees
+- **CONDITIONAL** — depends on the execution context
+
+**B7 — Draft suggested response.** Write a ready-to-paste Gerrit reply that:
+- Directly answers the reviewer's question
+- Cites specific file:line evidence
+- Is concise (3-5 sentences max in the quote block)
+- Sounds like Owen (professional, knowledgeable, respectful)
+
+##### 3.5.3: Write Bridge Artifacts
+
+For each completed analysis, write the artifact to:
+
+```
+artifacts/review-tracker/bridge-artifacts/{thread-id-lower}-analysis.md
+```
+
+Use this format (matching the `templates/code-archaeology-analysis.md.template`):
+
+```markdown
+# Bridge Analysis: {THREAD-ID}
+
+**Question:** {question text from reviewer}
+
+**Reviewer:** {reviewer name}
+**Review:** {review number}
+**File:** `{file}:{line}`
+
+---
+
+## Investigation
+
+### 1. Where is `{attribute}` set?
+
+**Source:** `{source_file}:{source_line}`
+```python
+{code snippet showing initialization}
+```
+
+**Lifecycle:** {description of when/how it's created}
+
+### 2. Edge cases where it might be missing
+
+| Scenario | Missing? | Why |
+|----------|----------|-----|
+| Production views | {Yes/No} | {reason} |
+| Unit tests (mocked request) | {Yes/No} | {reason} |
+| Error handlers (500/404) | {Yes/No} | {reason} |
+
+### 3. Is the defensive check necessary?
+
+**Verdict:** {NECESSARY / UNNECESSARY / CONDITIONAL}
+
+**Evidence:** {specific counts, file references, pattern analysis}
+
+---
+
+## Suggested Response
+
+> {ready-to-paste Gerrit reply}
+
+---
+
+## References
+
+{list of file:line references used in the analysis}
+```
+
+Create the bridge-artifacts directory if it doesn't exist:
+
+```bash
+mkdir -p artifacts/review-tracker/bridge-artifacts
+```
+
+##### 3.5.4: Incorporate Bridge Results into Tracker
+
+For each successful bridge analysis, update the thread's section in the
+tracker document with:
+
+```markdown
+**Deep Dive:** [Code Analysis](bridge-artifacts/{thread-id-lower}-analysis.md)
+
+**Answer Summary:**
+- {key finding 1}
+- {key finding 2}
+- {key finding 3}
+
+**Suggested Response:**
+> {the ready-to-paste response from the analysis}
+
+**Status for Owen:** Copy the suggested response to Gerrit.
+```
+
+Place these AFTER the existing **AI Assessment** line. Preserve the original
+assessment — the deep dive adds to it, not replaces it.
+
+##### 3.5.5: Handle Failures
+
+If any individual bridge analysis fails (can't find the attribute, grep
+returns nothing, question is too vague to research):
+
+1. Log the failure reason
+2. Fall back to the structured research guidance note:
+
+```markdown
+**Deep Dive:** ⚠️ Automated analysis could not resolve this question.
+
+**Research guidance:**
+- Search for `{pattern}` in middleware and base classes
+- Check test helpers for mocking patterns
+- Review git blame for historical context
+```
+
+3. Continue to next thread — **never** fail the entire tracker run.
+
+**The tracker ALWAYS completes. Bridge failure is non-fatal.**
 
 #### Step 4: Generate Document
 
