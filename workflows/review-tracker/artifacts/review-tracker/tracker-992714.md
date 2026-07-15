@@ -1,13 +1,13 @@
 # Review 992714 — Live Comment Tracker
 
-**Review:** https://review.opendev.org/c/openstack/horizon/+/992714
+**Review:** [https://review.opendev.org/c/openstack/horizon/+/992714](https://review.opendev.org/c/openstack/horizon/+/992714)
 **Title:** Switch default Key Pairs panel from AngularJS to Python
 **Author:** Owen McGonagle
-**Status:** NEW
-**Current Patchset:** 11
-**Zuul:** Pending (PS11 not yet voted)
+**Status:** MERGED (2026-07-14 10:57 UTC)
+**Current Patchset:** 13
+**Zuul:** Verified+2 (PS13 — gate pipeline succeeded 2026-07-14)
 **Files Changed:** 5 (defaults.py toggle, views.py cleanup, Selenium test update, docs, reno)
-**Reviewers:** Jan Jasek, Tatiana Ovchinnikova
+**Reviewers:** Jan Jasek, Tatiana Ovchinnikova, Radomir Dopieralski, Ivan Anfimov
 
 ---
 
@@ -22,10 +22,21 @@
 | 5 | 2026-07-07 | AI (Claude) | Recheck — Tatiana edited CMT-TAT-1 (corrected blueprint name), Owen replied with clarification questions |
 | 6 | 2026-07-07 | AI (Claude) | Recheck — Owen added follow-up: confirms he sees corrected name, asks URL vs name-only format |
 | 7 | 2026-07-08 | AI (Claude) | Recheck — PS10/11 uploaded with blueprint tag, Tatiana answered format questions, CMT-TAT-1 RESOLVED |
+| 8 | 2026-07-13 | AI (Claude) | Recheck — Zuul Verified+1 PS11, Radomir CR+2, Ivan CR+1, NEW Tatiana CR-1 (docs deprecation marker on settings.rst) |
+| 9 | 2026-07-14 | AI (Claude) | Recheck — **MERGED.** Owen fixed docs (PS13), CMT-TAT-2 RESOLVED. Jan CR+2 + W+1 ("Tested in devstack"). Radomir re-approved CR+2. Gate passed, merged 2026-07-14 10:57 UTC. |
 
 ---
 
 ## What Needs to Change
+
+### Scan #8 — 2026-07-13
+
+~~**[CMT-TAT-2](#cmt-tat-2): Update deprecation marker in settings.rst — keep existing marker, add new one for Key Pairs — RESOLVED in PS13**~~
+
+- ~~**File:** `doc/source/configuration/settings.rst:48`~~
+- ~~**Status:** RESOLVED — Owen pushed PS13 with the fix (separate deprecation markers for Zed and 2026.2), replied "Done" to Tatiana's thread~~
+
+---
 
 ### Scan #4 — 2026-07-07
 
@@ -52,6 +63,32 @@
 ---
 
 ## Change Log
+
+### Scan #9 — 2026-07-14
+
+1. **UPDATED** [Header](#): Status NEW → **MERGED** (2026-07-14 10:57 UTC)
+2. **UPDATED** [Header](#): Current Patchset 11 → 13 (PS12 rebase, PS13 docs deprecation fix)
+3. **UPDATED** [Header](#): Zuul Verified+1 → Verified+2 (gate pipeline succeeded)
+4. **UPDATED** [Score Summary](#score-summary): Jan CR+2 + W+1, Radomir re-approved CR+2, Tatiana -1 cleared by PS13
+5. **UPDATED** [CMT-TAT-2](#cmt-tat-2): Owen replied "Done" (PS13) — status → RESOLVED (unresolved: false)
+6. **NEW** [CMT-JAN-3](#cmt-jan-3): Jan's "Tested in devstack, code looks good, Thanks!" + CR+2 + W+1
+7. **UPDATED** [What Needs to Change](#what-needs-to-change): Scan #8 CMT-TAT-2 entry struck through (docs fix pushed in PS13)
+8. **UPDATED** [Key Remaining Items](#key-remaining-items): All items RESOLVED — review merged
+9. **UPDATED** [Open Threads](#open-threads-requiring-attention): Table empty — no open threads remain
+10. **UPDATED** [Comment Statistics](#comment-statistics): Owen 11 (+1 "Done"), Jan 3 (+1 "Tested in devstack")
+
+### Scan #8 — 2026-07-13
+
+1. **UPDATED** [Header](#): Zuul Pending → Verified+1 (PS11 build succeeded 2026-07-13)
+2. **UPDATED** [Header](#): Reviewers — added Radomir Dopieralski, Ivan Anfimov
+3. **UPDATED** [Score Summary](#score-summary): Radomir Code-Review+2, Ivan Code-Review+1, Tatiana Code-Review -1 (new)
+4. **NEW** [CMT-RAD-1](#cmt-rad-1): Radomir's Code-Review+2 with "looks good to me, I didn't test it"
+5. **NEW** [CMT-RAD-2](#cmt-rad-2): Radomir's "recheck random timeout" (triggered CI rerun)
+6. **NEW** [CMT-TAT-2](#cmt-tat-2): Tatiana's inline comment on `settings.rst:48` — keep existing deprecation marker, add new one for Key Pairs
+7. **UPDATED** [What Needs to Change](#what-needs-to-change): Added Scan #8 entry for docs deprecation marker fix
+8. **UPDATED** [Key Remaining Items](#key-remaining-items): Zuul CI ~~OPEN~~ → PASS, added docs deprecation marker and Tatiana's new -1
+9. **UPDATED** [Open Threads](#open-threads-requiring-attention): CMT-TAT-2 added (inline, HIGH priority)
+10. **UPDATED** [Comment Statistics](#comment-statistics): Radomir 2 total (new), Tatiana 4 total (+1 inline), Ivan 0 (vote only)
 
 ### Scan #7 — 2026-07-08
 
@@ -117,41 +154,40 @@ This is a de-angularize patch (topic: `de-angularize`) that flips the `key_pairs
 
 The review sat idle from June 12–24, was marked ready for review on June 24, and received Jan Jasek's first review on June 25 with Code-Review -1 and two inline comments on the Selenium test assertions. Owen addressed both comments in PS9 (pushed 2026-06-26) and replied "Done" to both threads. Jan's Code-Review -1 was cleared by the new patchset.
 
-**Latest developments (as of Scan #7 — 2026-07-08):**
-- **PS10 uploaded** (2026-07-08 13:53) — rebase only, Tatiana's Code-Review -1 copied
-- **PS11 uploaded** (2026-07-08 13:58) — commit message updated with `Partially-Implements: blueprint removing-angularjs`
-- **CMT-TAT-1 RESOLVED** — Tatiana confirmed format (short name only, no URL) and Owen pushed the fix in PS11
-- **All votes reset to 0** — Zuul Verified+1 outdated by PS10, Tatiana's Code-Review -1 outdated by PS11
-- **Awaiting:**
-  - Zuul CI on PS11
-  - Jan's re-review of PS9 fixes (CMT-JAN-1, CMT-JAN-2)
-  - Tatiana's re-review of PS11 commit message
-  - Two +2 Code-Review votes from core reviewers
-  - Workflow+1 to merge
+**Latest developments (as of Scan #9 — 2026-07-14):**
+- **Owen pushed PS12** (2026-07-13) — rebase
+- **Owen pushed PS13** (2026-07-13) — docs deprecation fix (separate markers for Zed and 2026.2), replied "Done" to CMT-TAT-2
+- **Zuul Verified+1** (2026-07-13) — PS13 check pipeline succeeded
+- **Radomir Dopieralski Code-Review+2** (2026-07-14) — re-approved on PS13
+- **Jan Jasek Code-Review+2 + Workflow+1** (2026-07-14) — "Tested in devstack, code looks good, Thanks!"
+- **Zuul Verified+2** (2026-07-14) — gate pipeline succeeded
+- **MERGED** (2026-07-14 10:57 UTC) — change successfully merged
+
+**Timeline to merge:** First submitted 2026-05-28, first reviewer feedback 2026-06-25 (Jan), 13 patchsets, merged 2026-07-14 — 47 days total, 19 days from first review feedback to merge.
 
 <a name="score-summary"></a>
 
-### Score Summary
+### Score Summary (Final — at merge)
 
 | Label | Voter | Value |
 |-------|-------|-------|
-| Verified | Zuul | 0 (PS11 pending — prior +1 on PS9 outdated by PS10) |
-| Code-Review | Tatiana Ovchinnikova | 0 (prior -1 outdated by PS11 commit message update) |
-| Code-Review | Jan Jasek | 0 (prior -1 cleared by PS9) |
-| Workflow | — | 0 |
+| Verified | Zuul | +2 (PS13 gate pipeline succeeded 2026-07-14) |
+| Code-Review | Radomir Dopieralski | +2 (2026-07-14, re-approved on PS13) |
+| Code-Review | Jan Jasek | +2 (2026-07-14, "Tested in devstack") |
+| Code-Review | Ivan Anfimov | +1 (2026-07-13, vote on PS11, cleared by PS13) |
+| Code-Review | Tatiana Ovchinnikova | -1 (2026-07-13, vote on PS11, cleared by PS13) |
+| Workflow | Jan Jasek | +1 (2026-07-14) |
 
-### What You Should Do Next
+### Review Complete
 
-1. **Wait for Zuul CI on PS11** — The commit message update should not affect tests, but Zuul must re-run.
-2. **Wait for Tatiana's re-review** — She should confirm the blueprint tag is correct and clear her -1.
-3. **Wait for Jan's re-review** — Both of his threads (CMT-JAN-1, CMT-JAN-2) are resolved. He needs to confirm the fixes in PS9 and provide a +2 (or escalate if he's not core).
-4. **Obtain a second +2 Code-Review vote** from another core reviewer.
-5. **Get Workflow+1** from a core reviewer to merge.
-6. **Track progress on the blueprint** — Tatiana suggested Owen could "take care of the BP" by adding his patches to https://blueprints.launchpad.net/horizon/+spec/removing-angularjs and tracking progress there.
+This review has been **MERGED**. All comment threads are resolved. No further action needed.
+
+**Post-merge follow-up:**
+1. **Track progress on the blueprint** — Tatiana suggested Owen could "take care of the BP" by adding his patches to [https://blueprints.launchpad.net/horizon/+spec/removing-angularjs](https://blueprints.launchpad.net/horizon/+spec/removing-angularjs) and tracking progress there.
 
 ### Open Threads Requiring Attention
 
-None — all threads are resolved. Awaiting re-reviews.
+*None — all threads resolved, review merged.*
 
 ---
 
@@ -216,6 +252,34 @@ This properly tracks the de-angularization work in the Launchpad blueprint: http
 
 ---
 
+<a name="cmt-rad-1"></a>
+
+### CMT-RAD-1 — Code-Review+2: "looks good to me" — RESOLVED
+
+**Author:** Radomir Dopieralski | **File:** /PATCHSET_LEVEL | **PS:** 11
+
+> looks good to me, I didn't test it
+
+**AI Assessment:** This is an **INFORMATIONAL** comment accompanying Radomir's Code-Review+2 vote. He reviewed the code and approved it but notes he didn't test the Key Pairs panel in a browser. This is a positive signal — one of the two required +2 votes is now in place.
+
+**Status for Owen:** No action needed — this is a +2 approval.
+
+---
+
+<a name="cmt-rad-2"></a>
+
+### CMT-RAD-2 — Recheck random timeout — RESOLVED
+
+**Author:** Radomir Dopieralski | **File:** /PATCHSET_LEVEL | **PS:** 11
+
+> recheck random timeout
+
+**AI Assessment:** Radomir triggered a CI recheck after PS11's initial Zuul build failed with a random timeout. The recheck succeeded — Zuul Verified+1 on 2026-07-13.
+
+**Status for Owen:** No action needed — CI is green.
+
+---
+
 ### CMT-OWN-1 — Recheck (PS6) — RESOLVED
 
 **Author:** Owen McGonagle | **File:** /PATCHSET_LEVEL | **PS:** 6
@@ -261,6 +325,39 @@ This properly tracks the de-angularization work in the Launchpad blueprint: http
 **AI Assessment:** Second recheck on PS8 (likely after marking ready for review). No action needed.
 
 **Status for Owen:** No action needed.
+
+---
+
+<a name="cmt-jan-3"></a>
+
+### CMT-JAN-3 — Tested in devstack, code looks good — RESOLVED
+
+**Author:** Jan Jasek | **File:** /PATCHSET_LEVEL | **PS:** 13
+
+> Tested in devstack, code looks good, Thanks!
+
+**AI Assessment:** This is Jan's **final approval** comment accompanying his Code-Review+2 and Workflow+1 votes. He confirmed he tested the Key Pairs panel in a devstack environment — this goes beyond just code reading (note Radomir's earlier +2 explicitly said "I didn't test it"). Jan's Workflow+1 was the final gate that sent the change to Zuul's gate pipeline for merge.
+
+**Status for Owen:** No action needed — this was the merge-enabling vote.
+
+---
+
+## Inline Comments — Tatiana Ovchinnikova
+
+<a name="cmt-tat-2"></a>
+
+### CMT-TAT-2 — Settings.rst deprecation marker structure — RESOLVED
+
+**Author:** Tatiana Ovchinnikova | **File:** [`doc/source/configuration/settings.rst:48`](https://github.com/openstack/horizon/blob/master/doc/source/configuration/settings.rst#L48) | **PS:** 11
+
+> This should be changed as well. Since we only switch Key Pairs to Django, probably we should keep this marker and add a new one for Key Pairs?
+
+**Reply (Owen McGonagle, PS13):**
+> Done
+
+**AI Assessment:** This was a **blocking** comment (accompanied Code-Review -1). Tatiana pointed out that Owen's patch replaced the entire Zed-era `.. deprecated:: 22.2.0(Zed)` block — which covered `images_panel` and `roles_panel` — with new text that only talked about Key Pairs. Owen fixed this in PS13 by keeping the original Zed deprecation marker and adding a separate `.. deprecated:: 2026.2` marker for Key Pairs. The thread is now resolved (`unresolved: false`).
+
+**Status for Owen:** ~~No action needed — resolved. Review merged.~~
 
 ---
 
@@ -357,9 +454,11 @@ The T3 test confirms the delete flow correctly displays `"Success: Deleted Key P
 
 | Reviewer | Total | Resolved | Pending |
 |----------|-------|----------|---------|
-| Owen McGonagle | 10 | 10 | 0 |
-| Jan Jasek | 2 | 2 | 0 |
-| Tatiana Ovchinnikova | 3 | 3 | 0 |
+| Owen McGonagle | 11 | 11 | 0 |
+| Jan Jasek | 3 | 3 | 0 |
+| Tatiana Ovchinnikova | 4 | 4 | 0 |
+| Radomir Dopieralski | 2 | 2 | 0 |
+| Ivan Anfimov | 0 (vote only) | — | — |
 
 ---
 
@@ -375,9 +474,13 @@ The T3 test confirms the delete flow correctly displays `"Success: Deleted Key P
 | ~~Wait for Zuul CI on PS9~~ | ~~HIGH~~ | ~~PASS (Verified+1 on 2026-06-26)~~ |
 | ~~Add commit message "Partially-Implements: blueprint removing-angularjs" (CMT-TAT-1)~~ | ~~HIGH~~ | ~~FIXED in PS11~~ |
 | ~~Get Tatiana's Code-Review -1 cleared after commit message update~~ | ~~HIGH~~ | ~~CLEARED (vote reset by PS11)~~ |
-| Wait for Zuul CI on PS11 | HIGH | OPEN |
-| Get Tatiana's re-review to confirm blueprint tag | HIGH | OPEN |
-| Get Jan's re-review of PS9 fixes | HIGH | OPEN |
-| Obtain two +2 Code-Review votes from core reviewers | HIGH | OPEN |
-| Get Workflow +1 | HIGH | OPEN |
+| ~~Wait for Zuul CI on PS11~~ | ~~HIGH~~ | ~~PASS (Verified+1 on 2026-07-13)~~ |
+| ~~Get Tatiana's re-review to confirm blueprint tag (CMT-TAT-1)~~ | ~~HIGH~~ | ~~CMT-TAT-1 RESOLVED~~ |
+| ~~Fix `settings.rst` deprecation markers (CMT-TAT-2)~~ | ~~HIGH~~ | ~~FIXED in PS13~~ |
+| ~~Get Tatiana's -1 cleared after docs fix~~ | ~~HIGH~~ | ~~CLEARED (vote reset by PS13)~~ |
+| ~~Get Jan's re-review of PS9 fixes~~ | ~~HIGH~~ | ~~Jan CR+2 + W+1 (2026-07-14, "Tested in devstack")~~ |
+| ~~Obtain first +2 Code-Review vote~~ | ~~HIGH~~ | ~~Radomir +2 (2026-07-08)~~ |
+| ~~Obtain second +2 Code-Review vote from a core reviewer~~ | ~~HIGH~~ | ~~Jan +2 (2026-07-14)~~ |
+| ~~Get Workflow +1~~ | ~~HIGH~~ | ~~Jan W+1 (2026-07-14)~~ |
 | ~~Verify delete message works in browser~~ | ~~MEDIUM~~ | ~~VERIFIED (Playwright T3 PASS)~~ |
+| **MERGED** | — | **2026-07-14 10:57 UTC** |

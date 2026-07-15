@@ -22,7 +22,9 @@ The user will provide one of:
 - A change number with `--deep-dive` flag (bridge to code analysis for reviewer questions)
 - A change number with `--create-patch` flag (check out review, apply fixes from tracker)
 - A change number with `--verify-patch` flag (run tox tests against patched checkout)
+- A change number with `--final-report` flag (post-merge assessment with metrics)
 - A change number with `--update-artifact-dashboard` flag (publish to ioshaworkflow dashboard)
+- A change number with `--clone-at PATH` flag (specify where to clone the review code)
 
 Flags are composable:
 
@@ -32,6 +34,10 @@ Flags are composable:
 /review-tracker 977939 --create-patch --verify-patch --update-artifact-dashboard
 /review-tracker 977939 --recheck --create-patch
 /review-tracker 977939 --verify-patch
+/review-tracker 977939 --final-report
+/review-tracker 977939 --final-report --update-artifact-dashboard
+/review-tracker 986458 --clone-at /tmp/my-review
+/review-tracker 986458 --clone-at /tmp/my-review --create-patch --verify-patch
 ```
 
 ## Process
@@ -47,22 +53,172 @@ Flags are composable:
    - `--update-artifact-dashboard`: set `publish_after = true`
    - `--create-patch`: set `create_patch = true`
    - `--verify-patch`: set `verify_patch = true`
+   - `--final-report`: set `final_report = true`
    - `--horizon-url URL`: set `horizon_url = URL` (enables Playwright browser testing)
    - If `horizon_url` not set by flag, check `HORIZON_URL` env var. If not set, Playwright step is skipped.
+   - `--clone-at PATH`: set `clone_at = PATH`
+   - If `clone_at` not set by flag, check `REVIEW_CLONE_ROOT` env var.
+   - If neither set, use default: `IPROJECT_ROOT/projects/review_{number}/reviews/`
+     where `IPROJECT_ROOT = /home/omcgonag/Work/mymcp/workspace/iproject`
 
 3. **Determine primary mode**:
    - If `--status` flag: print current header + Open Threads table from existing tracker, STOP
      (all other flags are ignored with `--status`)
+   - If `--final-report` flag: go to **Final Report Mode** (Step F1)
+     - Requires review status = MERGED. If not MERGED, report error and STOP.
+     - Requires existing tracker artifact. If missing, report error and STOP.
    - If `--recheck` flag: go to **Recheck Mode** (Step R1)
    - Otherwise: check if `artifacts/review-tracker/tracker-{number}.md` exists
      - If exists AND no action flags: tell the user "Tracker already exists. Use `--recheck` to update, or `--force` to regenerate from scratch."
      - If exists: proceed to post-primary actions
-     - If not exists: go to **Initial Scan Mode** (Step 1)
+     - If not exists: go to **Bootstrap and Initial Scan Mode**:
+       1. Run **Step 0.5: Bootstrap Review Project** (if using default path)
+       2. Run **Step 0.6: Clone Review Code**
+       3. Run **Step 0.7: Initial Code Review Bridge**
+       4. Then proceed to **Initial Scan Mode** (Step 1)
+       5. Set `publish_after = true` (auto-publish on first run)
 
 4. **Post-primary-mode actions** (in order):
    - If `create_patch`: go to **Create Patch Mode** (Step C1)
    - If `verify_patch`: go to **Verify Patch Mode** (Step V1)
    - If `publish_after`: go to **Publish Mode** (Step P1)
+
+---
+
+### Bootstrap and Clone (First Run Only)
+
+These steps run ONLY on first invocation (no existing tracker artifact).
+
+#### Step 0.5: Bootstrap Review Project
+
+**Condition:** Using default clone path (no `--clone-at` flag, no `REVIEW_CLONE_ROOT` env var).
+
+Compute the default project path:
+
+```
+IPROJECT_ROOT = /home/omcgonag/Work/mymcp/workspace/iproject
+PROJECT_NAME  = review_{number}
+PROJECT_DIR   = ${IPROJECT_ROOT}/projects/${PROJECT_NAME}
+CLONE_ROOT    = ${PROJECT_DIR}/reviews
+```
+
+If `PROJECT_DIR` does not exist, create the iproject project:
+
+```
+Call create_project MCP tool:
+  project_name = "review_{number}"
+  description  = "Review tracking for Gerrit {number}: {subject}"
+```
+
+If `create_project` fails (MCP unavailable, permissions, etc.): fall back to
+creating the directory manually:
+
+```bash
+mkdir -p "${CLONE_ROOT}"
+```
+
+**Skip this step if:**
+- `--clone-at` was provided (user is managing their own directory)
+- `REVIEW_CLONE_ROOT` env var is set
+- Project directory already exists
+
+#### Step 0.6: Clone Review Code
+
+Resolve the clone root path:
+
+```
+if clone_at is set:
+    CLONE_ROOT = clone_at
+elif REVIEW_CLONE_ROOT env var is set:
+    CLONE_ROOT = REVIEW_CLONE_ROOT
+else:
+    CLONE_ROOT = ${IPROJECT_ROOT}/projects/review_{number}/reviews
+```
+
+Compute clone paths:
+
+```
+CLONE_DIR   = ${CLONE_ROOT}/horizon-review-${number}
+LAST2       = number % 100, zero-padded to 2 digits
+PROJECT     = Gerrit project path (e.g., openstack/horizon)
+PATCHSET    = current patchset number from Gerrit API
+```
+
+**If `CLONE_DIR` already exists:**
+
+```bash
+cd "${CLONE_DIR}"
+# Check for dirty state
+if [ -n "$(git status --porcelain)" ]; then
+    echo "WARNING: Existing clone has uncommitted changes:"
+    git status --short
+    echo ""
+    echo "Clean up the checkout before proceeding, or use --clone-at to specify a different path."
+    STOP
+fi
+# Reuse clean checkout -- update to current patchset if needed
+echo "Reusing existing clone at ${CLONE_DIR}"
+git fetch origin "refs/changes/${LAST2}/${number}/${PATCHSET}"
+git checkout FETCH_HEAD
+```
+
+**If `CLONE_DIR` does not exist:**
+
+```bash
+mkdir -p "${CLONE_ROOT}"
+git clone "https://review.opendev.org/${PROJECT}" "${CLONE_DIR}"
+cd "${CLONE_DIR}"
+git fetch origin "refs/changes/${LAST2}/${number}/${PATCHSET}"
+git checkout FETCH_HEAD
+```
+
+Report:
+
+```
+Clone: ${CLONE_DIR}
+Commit: $(git log -1 --format="%h %s")
+Patchset: PS${PATCHSET}
+```
+
+Store `CLONE_DIR` and `CLONE_ROOT` for use by later steps (C3, V1).
+
+#### Step 0.7: Initial Code Review Bridge
+
+**Condition:** Initial Scan Mode (first run, no existing tracker). Skip on
+`--recheck`, `--create-patch`-only, `--status`, or `--final-report`.
+
+Invoke `/horizon-code-review` with the Gerrit change number. The skill will:
+
+1. Gather context from Gerrit (commit message, prior review history)
+2. Read code files from `CLONE_DIR` (the cloned checkout from Step 0.6)
+3. Perform its full review (plugin API check, testing adequacy, etc.)
+4. Write output to `artifacts/horizon-review/code-{number}.md`
+
+After the horizon-code-review skill completes:
+
+1. Copy the review artifact to the review-tracker bridge artifacts directory:
+
+```bash
+mkdir -p artifacts/review-tracker/bridge-artifacts
+cp artifacts/horizon-review/code-${number}.md \
+   artifacts/review-tracker/bridge-artifacts/initial-review-${number}.md
+```
+
+2. Extract key data from the review artifact for inclusion in the tracker:
+   - **Verdict** line (APPROVE / REQUEST_CHANGES / COMMENT)
+   - **Summary** section (1-2 sentences)
+   - **Blockers** section (list of items)
+   - **Suggestions** section (list of items)
+
+3. Store extracted data for Step 4 (tracker document generation).
+
+**If bridge fails** (skill error, timeout, unexpected output):
+
+1. Log warning: "Initial code review bridge failed: {reason}"
+2. Continue to Step 1 (tracker still provides value without code review)
+3. Note in tracker document: "Initial code review: unavailable (bridge error)"
+
+**The tracker ALWAYS completes. Bridge failure is non-fatal.**
 
 ---
 
@@ -168,6 +324,32 @@ Follow this section order exactly:
 **Zuul:** {Verified vote status}
 **Files Changed:** {count} ([`file1.py:line`](https://github.com/openstack/horizon/blob/master/file1.py#Lline), [`file2.py`](https://github.com/openstack/horizon/blob/master/file2.py))
 **Reviewers:** {list of reviewers who commented}
+
+---
+
+## Initial Code Review
+
+{If bridge ran successfully in Step 0.7:}
+
+**Performed by:** `/horizon-code-review` (automated bridge)
+**Verdict:** {verdict from bridge: APPROVE / REQUEST_CHANGES / COMMENT}
+**Full Analysis:** [Code Review](bridge-artifacts/initial-review-{number}.md)
+
+### Summary
+{summary extracted from bridge output}
+
+### Blockers
+{blockers list from bridge, or "None"}
+
+### Suggestions
+{suggestions list from bridge, or "None"}
+
+{If bridge failed:}
+
+**Status:** Unavailable -- bridge to `/horizon-code-review` failed.
+Run `/horizon-code-review {number}` manually for code analysis.
+
+{If not first run (recheck): omit this section entirely.}
 
 ---
 
@@ -362,14 +544,21 @@ For each open entry in "What Needs to Change":
 3. Record the thread ID (e.g., `CMT-JAN-1`) from the entry heading
 4. If no before/after blocks found: mark as "manual intervention required" (skip this entry)
 
-#### Step C3: Clone the Review
+#### Step C3: Locate or Clone the Review
 
-Compute paths:
+Compute paths using the same clone root as Step 0.6:
 
 ```
-REPO_ROOT = parent directory of the workflow repos
-            (walk up from workflow root to find the repo/ directory)
-CHECKOUT_DIR = ${REPO_ROOT}/review-{number}-ps{N}
+if clone_at is set:
+    CLONE_ROOT = clone_at
+elif REVIEW_CLONE_ROOT env var is set:
+    CLONE_ROOT = REVIEW_CLONE_ROOT
+else:
+    CLONE_ROOT = IPROJECT_ROOT/projects/review_{number}/reviews
+```
+
+```
+CHECKOUT_DIR = ${CLONE_ROOT}/horizon-review-${number}
 LAST2 = number % 100, zero-padded to 2 digits
 ```
 
@@ -479,12 +668,12 @@ the fixes don't break anything before the developer pushes.
 
 #### Step V1: Locate or Create Checkout
 
-Compute paths:
+Compute paths using the same clone root:
 
 ```
-REPO_ROOT = same as Create Patch Mode
-PATCH_DIR = ${REPO_ROOT}/review-{number}-ps{N}
-VERIFY_DIR = ${REPO_ROOT}/review-{number}-ps{N}-verify
+CLONE_ROOT = same as Step 0.6 / Step C3
+PATCH_DIR = ${CLONE_ROOT}/horizon-review-${number}
+VERIFY_DIR = ${CLONE_ROOT}/horizon-review-${number}-verify
 ```
 
 Three scenarios:
@@ -791,6 +980,157 @@ Print a summary:
 
 ---
 
+### Final Report Mode
+
+Generates a comprehensive post-merge assessment document with quantitative metrics,
+timeline analysis, reviewer engagement profiles, and honest self-assessment. This mode
+produces a standalone document suitable for sharing with management and colleagues.
+
+**Prerequisites:**
+- Review status must be MERGED
+- Tracker artifact must exist at `artifacts/review-tracker/tracker-{number}.md`
+
+#### Step F1: Validate Prerequisites
+
+1. Fetch review status from Gerrit:
+   ```
+   GET https://review.opendev.org/changes/{change-id}
+   ```
+   If `status` != `MERGED`: report "Review {number} is not yet merged
+   (status: {status}). Final reports are generated after merge." and STOP.
+
+2. Check tracker artifact exists:
+   `artifacts/review-tracker/tracker-{number}.md`
+   If missing: report "Run `/review-tracker {number}` first to create
+   the tracker." and STOP.
+
+3. Read the existing tracker artifact for thread data and scan history.
+
+#### Step F2: Fetch Complete Gerrit Data
+
+Make two API calls:
+
+```
+GET /changes/{change-id}/detail?o=DETAILED_LABELS&o=ALL_REVISIONS&o=MESSAGES
+GET /changes/{change-id}/comments
+```
+
+From the detail response, extract:
+- All patchsets with `_number`, `created`, `kind`, `description`, `uploader`
+- All messages with `date`, `author`, `tag`, `message`
+- All label votes with `date`, `value`, `name`
+- `created`, `updated`, `submitted` timestamps
+
+From the comments response, extract:
+- All comments with `author`, `updated`, `message`, `unresolved`, `in_reply_to`
+- Group into threads using the same algorithm as initial scan
+
+#### Step F3: Compute Metrics
+
+Calculate these metrics from the raw data:
+
+**Timeline Metrics:**
+| Metric | Computation |
+|--------|-------------|
+| Total duration | `submitted` - `created` (in days) |
+| Development phase | First push to first CI pass |
+| Idle time | Longest gap between consecutive patchsets |
+| Review wait time | Marked ready for review to first reviewer comment |
+| Post-feedback time | First reviewer comment to merge |
+
+**Patchset Metrics:**
+| Metric | Computation |
+|--------|-------------|
+| Total patchsets | Count of all revisions |
+| REWORK count | Count where `kind` = "REWORK" |
+| TRIVIAL_REBASE count | Count where `kind` contains "REBASE" |
+| NO_CODE_CHANGE count | Count where `kind` = "NO_CODE_CHANGE" |
+
+**Comment Metrics:**
+| Metric | Computation |
+|--------|-------------|
+| Total comments | Count of all non-CI comments |
+| Unique reviewers | Count of distinct comment authors (excluding owner) |
+| Blocking comments | Count of threads with severity HIGH |
+| Response time per thread | First reply timestamp - root comment timestamp |
+| Median response time | Median of all response times |
+
+**CI Metrics:**
+| Metric | Computation |
+|--------|-------------|
+| Total CI runs | Count of Zuul Verified messages |
+| Pass rate | Pass count / Total CI runs |
+| Recheck count | Count of "recheck" patchset-level comments |
+
+#### Step F4: Determine Patchset Reasoning
+
+For each patchset, determine the reason:
+
+1. If `kind` = "REWORK" and it's PS1: "Initial implementation"
+2. If `kind` = "REWORK" and prior PS had Verified-1: "Fix CI failures"
+3. If `kind` = "REWORK" and prior PS had Code-Review with comments: "Address reviewer feedback"
+4. If `kind` = "TRIVIAL_REBASE": "Rebase on latest master"
+5. If `kind` = "NO_CODE_CHANGE": "Commit message update"
+6. If `kind` = "TRIVIAL_REBASE_WITH_MESSAGE_UPDATE": "Rebase + commit message update"
+
+Group patchsets into phases:
+- **Development phase:** PS1 through first Verified+1
+- **Stabilization phase:** Rebases and commit message updates before first review
+- **Review response phase:** Patchsets addressing reviewer feedback
+- **Final phase:** Last patchset(s) leading to merge
+
+#### Step F5: Generate Lessons Learned
+
+Analyze the data for honest self-assessment:
+
+**What Went Well — look for:**
+- Fast response to reviewer comments (< 24h)
+- Clear commit messages
+- Reviewer engagement (multiple reviewers, devstack testing)
+
+**What Could Improve — look for:**
+- Multiple CI failures before first pass
+- Long gaps between patchsets (> 5 days)
+- Slow response to comments (> 3 days)
+
+#### Step F6: Generate Final Report Document
+
+Write the complete report to `artifacts/review-tracker/final-report-{number}.md`
+with these sections in order:
+
+1. Header (review URL, author, final status, total patchsets, duration, comment count)
+2. Executive Summary (2-3 paragraphs)
+3. Review Timeline (chronological table of all events)
+4. Patchset History (table + narrative by phase)
+5. Reviewer Engagement (per-reviewer analysis)
+6. Comment Thread Analysis (all threads with response times)
+7. Response Time Metrics (median, mean, fastest, slowest)
+8. CI Performance (per-patchset results + summary)
+9. Code Evolution Metrics (rework vs rebase vs message-only counts)
+10. AI-Assisted Tracking Summary (scan history, capabilities exercised)
+11. Key Milestones (first push, first CI pass, first review, merge)
+12. Lessons Learned (What Went Well, What Could Improve, Patterns to Repeat)
+13. Appendix: Vote History
+
+All URLs must be clickable markdown links (per rules.md).
+
+#### Step F7: Report and Continue
+
+Print summary to the user:
+```
+--final-report complete for review {number}:
+
+  Artifact:  artifacts/review-tracker/final-report-{number}.md
+  Duration:  {days} days ({first_push} to {merge_date})
+  Patchsets: {N} ({rework} reworks, {rebase} rebases)
+  Threads:   {N} ({blocking} blocking)
+  Reviewers: {N}
+```
+
+If `publish_after` is set, proceed to Publish Mode (Step P1).
+
+---
+
 ### Publish Mode — Update Artifact Dashboard
 
 This mode publishes the current tracker artifact to the ioshaworkflow dashboard.
@@ -826,6 +1166,11 @@ verify_report = '{repo_root}/review-{number}-ps{N}-verify/reports/verify-report.
 if os.path.exists(verify_report):
     shutil.copy(verify_report, 'artifacts/review-tracker/verify-report-{number}.md')
     rename_map['verify-report-{number}.md'] = 'verify-report.md'
+
+# If --final-report produced a report, add to rename_map
+final_report = 'artifacts/review-tracker/final-report-{number}.md'
+if os.path.exists(final_report):
+    rename_map['final-report-{number}.md'] = 'final-report.md'
 ```
 
 Run the change detection:

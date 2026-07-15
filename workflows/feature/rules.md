@@ -3,6 +3,32 @@
 These rules apply to every /feature tag=xxx invocation,
 regardless of the specific tag or domain.
 
+## Clickable Navigation Links at Top of Every Artifact (Non-negotiable)
+
+Every artifact this workflow produces MUST begin with clickable markdown links
+to the key external resources a reader needs to continue their analysis. These
+links appear in the artifact header — the first few lines after the title.
+
+**Hard rule:** Any URL that appears in the header section of an artifact MUST be
+a clickable markdown link (`[text](url)`), NEVER a bare URL. This includes:
+
+- Gerrit review URLs
+- Jira ticket URLs
+- Launchpad bug/blueprint URLs
+- GitHub source file URLs
+- Any other external reference a visitor would need
+
+**Why:** Artifacts are published to web dashboards where bare URLs are not
+automatically linked. A visitor reading the artifact must be able to click
+through to the source review, ticket, or file immediately — without having
+to copy-paste URLs. This is a usability requirement, not a style preference.
+
+**Enforcement:** On every regeneration, verify the header links are clickable
+before writing the artifact. If a bare URL is found in the header, wrap it as
+a markdown link before proceeding.
+
+---
+
 ## Safety
 
 - NEVER push code or create a PR without explicit user approval

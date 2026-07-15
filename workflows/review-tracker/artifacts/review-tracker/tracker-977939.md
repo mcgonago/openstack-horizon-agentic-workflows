@@ -1,11 +1,12 @@
 # Review 977939 — Live Comment Tracker
 
-**Review:** https://review.opendev.org/c/openstack/horizon/+/977939
+**Review:** [https://review.opendev.org/c/openstack/horizon/+/977939](https://review.opendev.org/c/openstack/horizon/+/977939)
 **Title:** Add Horizon panel to enable TOTP MFA enrollment
 **Author:** Benjamin Lasseye
 **Status:** NEW
-**Current Patchset:** 25
+**Current Patchset:** 27
 **Zuul:** Verified +1 (passing)
+**Code-Review:** Jan Jasek -1
 **Files Changed:** 22 (new MFA panel under `settings/mfa/`, API additions in `keystone.py`, docs, defaults, release notes, requirements)
 **Reviewers:** Ivan Anfimov, Radomir Dopieralski, Jan Jasek, Owen McGonagle
 
@@ -16,6 +17,27 @@
 | # | Date | Scanner | Notes |
 |---|------|---------|-------|
 | 1 | 2026-06-19 | AI (Claude) | Initial scan — 28 comment threads from 5 participants (4 reviewers + author) |
+| 2 | 2026-07-14 | AI (Claude) | Recheck — PS25→27, 8 threads RESOLVED, 1 new thread (MFA workflow issue), Jan CR-1, abandon/restore misclick |
+
+---
+
+## Change Log
+
+### Scan #2 — 2026-07-14
+
+1. **UPDATED** Header: PS 25→27, added Code-Review: Jan Jasek -1
+2. **UPDATED** [CMT-JAN-1](#cmt-jan-1): Changed POSTED → RESOLVED (Benjamin: "Done", resolved on Gerrit)
+3. **UPDATED** [CMT-JAN-2](#cmt-jan-2): Changed POSTED → RESOLVED (Benjamin fixed URL, Jan confirmed: "Works fine now, thanks!")
+4. **UPDATED** [CMT-JAN-3](#cmt-jan-3): Changed POSTED → RESOLVED (Benjamin: "Done", dead code removed)
+5. **UPDATED** [CMT-IVA-8](#cmt-iva-8): Changed POSTED → RESOLVED (Benjamin: "Done")
+6. **UPDATED** [CMT-IVA-9](#cmt-iva-9): Changed POSTED → RESOLVED (Benjamin: "Done")
+7. **UPDATED** [CMT-OWN-1](#cmt-own-1): Changed POSTED → RESOLVED (Benjamin: "Done")
+8. **UPDATED** [CMT-OWN-2](#cmt-own-2): Changed POSTED → RESOLVED (back-and-forth discussion, Owen accepted either solution)
+9. **UPDATED** [CMT-OWN-3](#cmt-own-3): Changed POSTED → RESOLVED (Benjamin: "Done")
+10. **NEW** [CMT-OWN-5](#cmt-own-5): MFA credential delete workflow concern (views.py:230, PS26) — extensive 9-comment discussion between Owen, Benjamin, Jan — OPEN
+11. **NEW** [CMT-BEN-1](#cmt-ben-1): Abandon/restore misclick explanation (PS27, patchset-level) — INFORMATIONAL
+12. **UPDATED** Comment Statistics: recalculated with new comments
+13. **UPDATED** Key Remaining Items: 7 items struck through (resolved), 2 new items added
 
 ---
 
@@ -23,45 +45,38 @@
 
 ### Overall Status
 
-This review adds a new Settings panel for TOTP MFA enrollment in Horizon. It has been through 25 patchsets since February 2026, with feedback from 4 reviewers: Ivan Anfimov (early rounds), Radomir Dopieralski (PS16), Jan Jasek (PS21), and Owen McGonagle (PS25). Most early-round feedback has been addressed. The latest patchset (PS25) has Zuul Verified+1 but no Code-Review or Workflow votes yet.
+This review has seen major progress since scan #1. Benjamin addressed all outstanding feedback from Ivan, Radomir, Jan, and Owen in PS26-27, resolving 8 previously open threads. The hardcoded URL bug ([CMT-JAN-2](#cmt-jan-2)) that was causing 404s in WEBROOT deployments is now fixed and confirmed working by Jan.
 
-The review has significant momentum — the author has been responsive to feedback, and the most recent comments (PS25) are nit-level. However, two threads from Jan Jasek on PS21 remain unresolved and require attention before this can progress.
+However, a new discussion thread ([CMT-OWN-5](#cmt-own-5)) has emerged about MFA credential deletion workflow behavior. Owen reported an issue where deleting MFA credentials can leave the user unable to log in. Benjamin attributes this to a Keystone bug, not a Horizon issue. Jan tested Owen's steps but could not reproduce. Jan gave Code-Review -1 partly related to this discussion.
+
+The review was briefly abandoned and immediately restored on 2026-06-24 (misclick by Benjamin). PS27 has Zuul Verified+1 but carries Jan's CR-1.
 
 ### Score Summary
 
 | Label | Value | Who |
 |-------|-------|-----|
 | Verified | +1 | Zuul |
-| Code-Review | (none) | — |
+| Code-Review | -1 | Jan Jasek |
 | Workflow | (none) | — |
 
 ### What You Should Do Next
 
-1. **HIGH** — Address Jan Jasek's hardcoded URL bug ([CMT-JAN-2](#cmt-jan-2)) — this is a functional defect (404 when WEBROOT is customized)
-2. **HIGH** — Verify Jan Jasek's `OPENSTACK_KEYSTONE_MFA_ISSUER` concern ([CMT-JAN-3](#cmt-jan-3)) has been fixed in PS25
-3. **MEDIUM** — Address Ivan Anfimov's suggestion to add Google Authenticator to app list ([CMT-IVA-8](#cmt-iva-8), [CMT-IVA-9](#cmt-iva-9))
-4. **LOW** — Fix commit message typos per Owen's comment ([CMT-OWN-1](#cmt-own-1))
-5. **LOW** — Fix nit: dropdown wording ([CMT-OWN-2](#cmt-own-2)) and missing space ([CMT-OWN-3](#cmt-own-3))
-6. **LOW** — Address Jan Jasek's wizard UX feedback ([CMT-JAN-1](#cmt-jan-1)) — author already acknowledged and implemented `wizard=True`
+1. **HIGH** — Resolve the MFA credential delete workflow issue ([CMT-OWN-5](#cmt-own-5)) — Jan can't reproduce your reported problem. Provide more specific reproduction steps or investigate whether it's a configuration issue in your devstack
+2. **HIGH** — Get Jan's CR-1 cleared — this requires resolving the views.py discussion
+3. **MEDIUM** — Solicit CR+2 votes from core reviewers (need 2x CR+2 for merge)
 
 ### Open Threads Requiring Attention
 
 | Thread | File | Status | Owner | Priority |
 |--------|------|--------|-------|----------|
-| [CMT-JAN-2](#cmt-jan-2) | `_select_credential_with_qr.html` | NEEDS FIX | Author (Benjamin) | HIGH |
-| [CMT-JAN-3](#cmt-jan-3) | `workflows.py` | VERIFY FIX | Author (Benjamin) | HIGH |
-| [CMT-IVA-8](#cmt-iva-8) | `workflows.py` | POSTED — WAITING FOR RESPONSE | Author (Benjamin) | MEDIUM |
-| [CMT-IVA-9](#cmt-iva-9) | `workflows.py` | POSTED — WAITING FOR RESPONSE | Author (Benjamin) | MEDIUM |
-| [CMT-JAN-1](#cmt-jan-1) | Patchset-level | POSTED — AUTHOR REPLIED | Jan Jasek | MEDIUM |
-| [CMT-OWN-1](#cmt-own-1) | Patchset-level | POSTED — WAITING FOR RESPONSE | Author (Benjamin) | LOW |
-| [CMT-OWN-2](#cmt-own-2) | `workflows.py` | POSTED — WAITING FOR RESPONSE | Author (Benjamin) | LOW |
-| [CMT-OWN-3](#cmt-own-3) | `workflows.py` | POSTED — WAITING FOR RESPONSE | Author (Benjamin) | LOW |
+| [CMT-OWN-5](#cmt-own-5) | `views.py:230` | NEEDS YOUR RESPONSE | Owen McGonagle | HIGH |
 
 ---
 
 ## Patchset-Level Comments
 
 <a name="cmt-iva-1"></a>
+
 ### CMT-IVA-1 — Release note request — RESOLVED
 
 **Author:** Ivan Anfimov | **PS:** 1
@@ -80,6 +95,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-iva-2"></a>
+
 ### CMT-IVA-2 — JS file translation support — RESOLVED
 
 **Author:** Ivan Anfimov | **PS:** 3
@@ -99,6 +115,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-rad-1"></a>
+
 ### CMT-RAD-1 — Radomir's initial review note — INFORMATIONAL
 
 **Author:** Radomir Dopieralski | **PS:** 16
@@ -112,7 +129,8 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-jan-1"></a>
-### CMT-JAN-1 — Wizard UX feedback (asterisk position + button flow) — POSTED — AUTHOR REPLIED
+
+### CMT-JAN-1 — Wizard UX feedback (asterisk position + button flow) — RESOLVED
 
 **Author:** Jan Jasek | **PS:** 21
 
@@ -129,13 +147,17 @@ The review has significant momentum — the author has been responsive to feedba
 **Reply (Benjamin Lasseye, PS21):**
 > Thank you for prompting me to look into this; I had overlooked the "wizard = True" option.
 
-**AI Assessment:** Jan raised two UX issues: (1) misplaced asterisk on required checkbox, (2) confusing button flow where "Enable MFA" is visible but non-functional on early tabs. Benjamin acknowledged and indicated he would use `wizard = True` to fix the button flow. This is a suggestion-level improvement. The author appears to have implemented the wizard change (later patchsets exist), but Jan has not confirmed resolution.
+**Reply (Benjamin Lasseye, PS21):**
+> Done
 
-**Status for Owen:** Jan's feedback is valid UX improvement. The author acknowledged and likely addressed in PS22+. This thread should be verified by Jan on the latest patchset.
+**AI Assessment:** Jan raised two UX issues: (1) misplaced asterisk on required checkbox, (2) confusing button flow where "Enable MFA" is visible but non-functional on early tabs. Benjamin acknowledged and implemented `wizard = True` to fix the button flow. Thread resolved on Gerrit.
+
+**Status for Owen:** No action needed — resolved.
 
 ---
 
 <a name="cmt-iva-7"></a>
+
 ### CMT-IVA-7 — Google Authenticator mention — RESOLVED
 
 **Author:** Ivan Anfimov | **PS:** 21
@@ -145,13 +167,14 @@ The review has significant momentum — the author has been responsive to feedba
 **Reply (Benjamin Lasseye, PS21):**
 > I intentionally chose to focus only on free and open-source applications. I'm open to change.
 
-**AI Assessment:** Ivan suggested mentioning Google Authenticator. Benjamin explained the FOSS-only choice but left room for change. Thread marked resolved on Gerrit. Related inline suggestions ([CMT-IVA-8](#cmt-iva-8), [CMT-IVA-9](#cmt-iva-9)) to add Google Authenticator to the app list remain unresolved.
+**AI Assessment:** Ivan suggested mentioning Google Authenticator. Benjamin explained the FOSS-only choice but left room for change. Thread marked resolved on Gerrit. Related inline suggestions ([CMT-IVA-8](#cmt-iva-8), [CMT-IVA-9](#cmt-iva-9)) to add Google Authenticator to the app list are now also resolved.
 
-**Status for Owen:** No action needed on this patchset-level thread. See inline threads for the specific code suggestions.
+**Status for Owen:** No action needed.
 
 ---
 
 <a name="cmt-recheck-1"></a>
+
 ### CMT-RECHECK-1 — Recheck (PS22) — INFORMATIONAL
 
 **Author:** Benjamin Lasseye | **PS:** 22
@@ -165,7 +188,8 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-own-1"></a>
-### CMT-OWN-1 — Commit message typos — POSTED — WAITING FOR RESPONSE
+
+### CMT-OWN-1 — Commit message typos — RESOLVED
 
 **Author:** Owen McGonagle | **PS:** 25
 
@@ -176,15 +200,36 @@ The review has significant momentum — the author has been responsive to feedba
 >
 > first pass at testing the creation of my new credential using FreeOTP is working nicely.
 
-**AI Assessment:** Owen identified three typos in the commit message and noted positive testing results with FreeOTP. Nit-level fix required. The positive testing note is encouraging for the review.
+**Reply (Benjamin Lasseye, PS25):**
+> Thanks, I'll take care of it.
 
-**Status for Owen:** This is your comment. Waiting for Benjamin to fix the typos in the next patchset.
+**Reply (Benjamin Lasseye, PS25):**
+> Done
+
+**AI Assessment:** Owen identified three typos in the commit message and noted positive testing results with FreeOTP. Benjamin acknowledged and fixed. Thread resolved on Gerrit.
+
+**Status for Owen:** No action needed — resolved.
+
+---
+
+<a name="cmt-ben-1"></a>
+
+### CMT-BEN-1 — Abandon/restore misclick — INFORMATIONAL
+
+**Author:** Benjamin Lasseye | **PS:** 27
+
+> Miss click...
+
+**AI Assessment:** Benjamin accidentally abandoned the review on 2026-06-24 and immediately restored it (~25 seconds later). No impact on the review state. PS27 continues normally with Zuul Verified+1.
+
+**Status for Owen:** No action needed — accidental, fully recovered.
 
 ---
 
 ## Inline Comments — Ivan Anfimov
 
 <a name="cmt-iva-3"></a>
+
 ### CMT-IVA-3 — Commit message example formatting — RESOLVED
 
 **Author:** Ivan Anfimov | **File:** `/COMMIT_MSG` L37 | **PS:** 10
@@ -203,6 +248,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-iva-4"></a>
+
 ### CMT-IVA-4 — Doc settings.rst underline fix — RESOLVED
 
 **Author:** Ivan Anfimov | **File:** `doc/source/configuration/settings.rst` L655 | **PS:** 15
@@ -220,6 +266,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-iva-5"></a>
+
 ### CMT-IVA-5 — Doc version already 2026.2 (L657) — RESOLVED
 
 **Author:** Ivan Anfimov | **File:** `doc/source/configuration/settings.rst` L657 | **PS:** 15
@@ -235,6 +282,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-iva-6a"></a>
+
 ### CMT-IVA-6a — MFA roles: "member" too? — RESOLVED
 
 **Author:** Ivan Anfimov | **File:** `doc/source/configuration/settings.rst` L659 | **PS:** 15
@@ -254,6 +302,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-iva-6b"></a>
+
 ### CMT-IVA-6b — Doc settings.rst underline fix (L666) — RESOLVED
 
 **Author:** Ivan Anfimov | **File:** `doc/source/configuration/settings.rst` L666 | **PS:** 15
@@ -271,6 +320,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-iva-6c"></a>
+
 ### CMT-IVA-6c — Doc version already 2026.2 (L668) — RESOLVED
 
 **Author:** Ivan Anfimov | **File:** `doc/source/configuration/settings.rst` L668 | **PS:** 15
@@ -286,7 +336,8 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-iva-8"></a>
-### CMT-IVA-8 — Add Google Authenticator to app list (L41) — POSTED — WAITING FOR RESPONSE
+
+### CMT-IVA-8 — Add Google Authenticator to app list (L41) — RESOLVED
 
 **Author:** Ivan Anfimov | **File:** `openstack_dashboard/dashboards/settings/mfa/workflows.py` L41 | **PS:** 21
 
@@ -294,14 +345,18 @@ The review has significant momentum — the author has been responsive to feedba
 >             "- You will need an authenticator app (Google Authenticator, "
 > ```
 
-**AI Assessment:** Suggestion to add Google Authenticator to the list of authenticator apps mentioned in the help text. Related to [CMT-IVA-7](#cmt-iva-7) patchset-level discussion about FOSS-only policy. Still unresolved — the author has not responded to this inline suggestion specifically. Ivan's patchset-level comment was marked resolved, but these inline suggestions remain open.
+**Reply (Benjamin Lasseye, PS21):**
+> Done
 
-**Status for Owen:** Low priority. The author expressed a preference for FOSS-only apps. This is a judgment call — Google Authenticator is widely known and would help users, but is not FOSS. No action needed from you; author should decide.
+**AI Assessment:** Suggestion to add Google Authenticator to the list of authenticator apps mentioned in the help text. Benjamin accepted and resolved. The earlier FOSS-only position ([CMT-IVA-7](#cmt-iva-7)) was relaxed — Google Authenticator is now included.
+
+**Status for Owen:** No action needed — resolved.
 
 ---
 
 <a name="cmt-iva-9"></a>
-### CMT-IVA-9 — Add Aegis Authenticator to app list (L42) — POSTED — WAITING FOR RESPONSE
+
+### CMT-IVA-9 — Add Aegis Authenticator to app list (L42) — RESOLVED
 
 **Author:** Ivan Anfimov | **File:** `openstack_dashboard/dashboards/settings/mfa/workflows.py` L42 | **PS:** 21
 
@@ -309,15 +364,19 @@ The review has significant momentum — the author has been responsive to feedba
 >             "Aegis Authenticator, FreeOTP, etc.).\n"
 > ```
 
-**AI Assessment:** Companion to [CMT-IVA-8](#cmt-iva-8). Suggests adding "Aegis Authenticator" to the list. Still unresolved.
+**Reply (Benjamin Lasseye, PS21):**
+> Done
 
-**Status for Owen:** Same as CMT-IVA-8. Author should decide on app list.
+**AI Assessment:** Companion to [CMT-IVA-8](#cmt-iva-8). Benjamin accepted and resolved.
+
+**Status for Owen:** No action needed — resolved.
 
 ---
 
 ## Inline Comments — Radomir Dopieralski
 
 <a name="cmt-rad-2"></a>
+
 ### CMT-RAD-2 — Deduplicate keystone API function — RESOLVED
 
 **Author:** Radomir Dopieralski | **File:** `openstack_dashboard/api/keystone.py` L519 | **PS:** 16
@@ -342,6 +401,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-rad-3"></a>
+
 ### CMT-RAD-3 — Policy check vs separate setting for panel visibility — RESOLVED
 
 **Author:** Radomir Dopieralski | **File:** `openstack_dashboard/dashboards/settings/mfa/panel.py` L32 | **PS:** 16
@@ -361,6 +421,7 @@ The review has significant momentum — the author has been responsive to feedba
 ---
 
 <a name="cmt-rad-4"></a>
+
 ### CMT-RAD-4 — Add cryptography to requirements.txt — RESOLVED
 
 **Author:** Radomir Dopieralski | **File:** `openstack_dashboard/dashboards/settings/mfa/utils.py` L17 | **PS:** 16
@@ -375,13 +436,14 @@ The review has significant momentum — the author has been responsive to feedba
 **Reply (Benjamin Lasseye, PS16):**
 > Done
 
-**AI Assessment:** Radomir correctly identified that the `cryptography` library import needed to be added to `requirements.txt`. Benjamin confirmed and added it. The `requirements.txt` diff in PS25 shows `+1` line added. Resolved.
+**AI Assessment:** Radomir correctly identified that the `cryptography` library import needed to be added to `requirements.txt`. Benjamin confirmed and added it. Resolved.
 
 **Status for Owen:** No action needed.
 
 ---
 
 <a name="cmt-rad-5"></a>
+
 ### CMT-RAD-5 — Multi-line string for help_text — RESOLVED
 
 **Author:** Radomir Dopieralski | **File:** `openstack_dashboard/dashboards/settings/mfa/workflows.py` L45 | **PS:** 16
@@ -403,7 +465,8 @@ The review has significant momentum — the author has been responsive to feedba
 ## Inline Comments — Jan Jasek
 
 <a name="cmt-jan-2"></a>
-### CMT-JAN-2 — Hardcoded URL breaks WEBROOT deployments (404 bug) — POSTED — WAITING FOR RESPONSE
+
+### CMT-JAN-2 — Hardcoded URL breaks WEBROOT deployments (404 bug) — RESOLVED
 
 **Author:** Jan Jasek | **File:** `openstack_dashboard/dashboards/settings/mfa/templates/mfa/_select_credential_with_qr.html` L112 | **PS:** 21
 
@@ -412,14 +475,21 @@ The review has significant momentum — the author has been responsive to feedba
 > edit: Now when I am verifying your patch practically, I can not see QR code at all and I am getting 404 in inspect->network, because the code is calling `http://xxxx/settings/mfa/credential/__new__/qr/`
 > But reality of my deployment is: `http://xxxx/dashboard/settings/mfa/....`
 
-**AI Assessment:** **This is a functional bug, not just a style issue.** Jan confirmed a 404 error when Horizon is deployed with a custom `WEBROOT` (e.g., `/dashboard/`). The template hardcodes `/settings/mfa/credential/` instead of using Django's `{% url %}` template tag, which respects `WEBROOT`. This will break any deployment where Horizon is not at the site root. This is blocking — the QR code cannot be displayed in WEBROOT-configured deployments.
+**Reply (Benjamin Lasseye, PS21):**
+> I've made the change. Can you confirm that the problem is no longer occurring on your end? Normally, the URL is now resolved using Django.
 
-**Status for Owen:** HIGH priority. This is a real bug confirmed by Jan's testing. The fix should use `{% url 'horizon:settings:mfa:credential' %}` or equivalent Django URL resolution instead of the hardcoded path. Check if PS25 addressed this — if not, flag to the author.
+**Reply (Jan Jasek, PS21):**
+> Works fine now, thanks!
+
+**AI Assessment:** **This was a functional bug now fixed.** Jan confirmed a 404 error when Horizon is deployed with a custom `WEBROOT` (e.g., `/dashboard/`). The template hardcoded `/settings/mfa/credential/` instead of using Django's URL resolution. Benjamin fixed it in PS26/27 and Jan confirmed it works. Thread resolved on Gerrit.
+
+**Status for Owen:** No action needed — resolved. The QR code now displays correctly in WEBROOT deployments.
 
 ---
 
 <a name="cmt-jan-3"></a>
-### CMT-JAN-3 — OPENSTACK_KEYSTONE_MFA_ISSUER undefined setting + dead code — POSTED — AUTHOR REPLIED
+
+### CMT-JAN-3 — OPENSTACK_KEYSTONE_MFA_ISSUER undefined setting + dead code — RESOLVED
 
 **Author:** Jan Jasek | **File:** `openstack_dashboard/dashboards/settings/mfa/workflows.py` L216 | **PS:** 21
 
@@ -435,16 +505,20 @@ The review has significant momentum — the author has been responsive to feedba
 >
 > This function is no longer useful. I'm going to delete it.
 
-**AI Assessment:** Jan found two issues: (1) reference to an undefined setting `OPENSTACK_KEYSTONE_MFA_ISSUER` that should be `OPENSTACK_TOTP_QRCODE_ISSUER`, and (2) dead code in success/failure message formatting (missing `%s` placeholder). Benjamin acknowledged both and said he would delete the function. Thread is still unresolved — needs verification that PS25 contains the fix.
+**Reply (Benjamin Lasseye, PS21):**
+> Done
 
-**Status for Owen:** HIGH priority to verify. Benjamin said he'd delete the function — check if the code at L216 in `workflows.py` still exists in PS25. If the dead code is gone, this can be considered addressed (pending Jan's confirmation).
+**AI Assessment:** Jan found two issues: (1) reference to an undefined setting `OPENSTACK_KEYSTONE_MFA_ISSUER` that should be `OPENSTACK_TOTP_QRCODE_ISSUER`, and (2) dead code in success/failure message formatting (missing `%s` placeholder). Benjamin deleted the function as promised. Thread resolved on Gerrit.
+
+**Status for Owen:** No action needed — resolved.
 
 ---
 
 ## Inline Comments — Owen McGonagle
 
 <a name="cmt-own-2"></a>
-### CMT-OWN-2 — Dropdown wording nit — POSTED — WAITING FOR RESPONSE
+
+### CMT-OWN-2 — Dropdown wording nit — RESOLVED
 
 **Author:** Owen McGonagle | **File:** `openstack_dashboard/dashboards/settings/mfa/workflows.py` L80 | **PS:** 25
 
@@ -455,26 +529,46 @@ The review has significant momentum — the author has been responsive to feedba
 >
 > btw - so far, so good - I was able to create my credential using the FreeOTP app
 
-**AI Assessment:** Nit — Owen suggests improving the help text wording because it references a dropdown that doesn't exist yet. Good UX observation. The positive testing note confirms FreeOTP integration works.
+**Reply (Benjamin Lasseye, PS25):**
+> I'm sorry, I don't understand. If there aren't any totps created yet, don't you think that's unclear [...]
 
-**Status for Owen:** This is your comment. Waiting for author to address in next patchset.
+**Reply (Owen McGonagle, PS25):**
+> Looking at the "TOTP Credential & QR Code" panel again, and seeing the TOP Credential "Create a new [...]
+
+**Reply (Benjamin Lasseye, PS25):**
+> Oh yes true... i understand, now i see the error. There are 2 solutions: [...]
+
+**Reply (Owen McGonagle, PS25):**
+> I am good with either option - you can pick one
+
+**AI Assessment:** Owen pointed out the help text references a dropdown that doesn't exist before the first credential is created. After some back-and-forth clarification, Benjamin understood the issue and proposed two solutions. Owen accepted either option. Thread resolved on Gerrit.
+
+**Status for Owen:** No action needed — resolved.
 
 ---
 
 <a name="cmt-own-3"></a>
-### CMT-OWN-3 — Missing space after "current" — POSTED — WAITING FOR RESPONSE
+
+### CMT-OWN-3 — Missing space after "current" — RESOLVED
 
 **Author:** Owen McGonagle | **File:** `openstack_dashboard/dashboards/settings/mfa/workflows.py` L123 | **PS:** 25
 
 > missing space after current
 
-**AI Assessment:** Typo-level nit — missing whitespace in a string. Simple fix.
+**Reply (Benjamin Lasseye, PS25):**
+> Right ! Thanks
 
-**Status for Owen:** This is your comment. Waiting for author to fix.
+**Reply (Benjamin Lasseye, PS25):**
+> Done
+
+**AI Assessment:** Typo-level nit — missing whitespace in a string. Fixed by Benjamin. Thread resolved on Gerrit.
+
+**Status for Owen:** No action needed — resolved.
 
 ---
 
 <a name="cmt-own-4"></a>
+
 ### CMT-OWN-4 — OPENSTACK_KEYSTONE_MFA_TOTP_ENABLED default location — RESOLVED
 
 **Author:** Owen McGonagle | **File:** `openstack_dashboard/defaults.py` L584 | **PS:** 25
@@ -505,24 +599,78 @@ The review has significant momentum — the author has been responsive to feedba
 
 ---
 
+<a name="cmt-own-5"></a>
+
+### CMT-OWN-5 — MFA credential delete workflow concern — NEEDS YOUR RESPONSE
+
+**Author:** Owen McGonagle | **File:** [openstack_dashboard/dashboards/settings/mfa/views.py:230](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/settings/mfa/views.py#L230) | **PS:** 26
+
+> Not sure if this is the best place to add my comment about a workflow question I have about if/when [the user deletes their MFA credential...]
+
+**Reply (Benjamin Lasseye, PS26):**
+> I didn't have that problem on my test/dev stack. Do you have a specific configuration? Report it to [...]
+
+**Reply (Owen McGonagle, PS26):**
+> I have a very generic devstack setup - all default settings. I have another setup that I can point t[o...]
+
+**Reply (Jan Jasek, PS27):**
+> Hi @omcgonag@redhat.com, Could you be a little more specific what are your steps and the issue you a[re facing...]
+
+**Reply (Jan Jasek, PS27):**
+> Okay, I am not sure if it is exactly the issue that you are facing but when I enable MFA, then there [...]
+
+**Reply (Benjamin Lasseye, PS27):**
+> I've noticed that getting stuck if you delete the credential is an issue. But this bug is in Keyston[e, not Horizon...]
+
+**Reply (Benjamin Lasseye, PS27):**
+> ```
+> openstack user set --enable-multi-factor-auth --multi-factor-auth-rule password,totp mfa-member [...]
+> ```
+
+**Reply (Owen McGonagle, PS27):**
+> My steps were (1) create new credentials (2) add new FreeOTP credential (4) go back to MFA panel (3) [delete credential...]
+
+**Reply (Jan Jasek, PS27 — 2026-07-14):**
+> Hi @omcgonag@redhat.com, I tried your steps but I am not facing this issue in my environment. When I [delete the credential, it works fine...]
+
+**AI Assessment:** Owen raised a concern about the user workflow when deleting MFA credentials — specifically, whether deleting a credential can leave the user locked out. This spawned a 9-comment discussion thread:
+
+- **Benjamin's position:** The credential-deletion lockout is a Keystone-side bug, not a Horizon issue. He provided CLI commands to recover.
+- **Jan's position:** He tested Owen's exact steps and could not reproduce the issue. He asked for more specific reproduction steps.
+- **Owen's position:** Reported the issue on a generic devstack setup with default settings.
+
+Jan gave CR-1 partly related to this unresolved discussion. The thread remains open — Owen needs to respond to Jan's latest comment (2026-07-14) confirming he cannot reproduce.
+
+This is a significant blocker: Jan's CR-1 needs to be cleared before this review can progress. Whether the issue is a Horizon bug or a Keystone bug, the discussion needs resolution.
+
+**Status for Owen:** HIGH priority — Jan tested your steps on 2026-07-14 and cannot reproduce. You need to:
+1. Try to reproduce again with a clean devstack
+2. If reproducible: provide exact steps, devstack version, and Keystone config
+3. If not reproducible: reply acknowledging and resolve the thread
+4. If it's a Keystone issue: consider opening a separate Keystone bug and resolving this thread
+
+---
+
 ## Inline Comments — Zuul
 
 <a name="cmt-zuul-1"></a>
+
 ### CMT-ZUUL-1 — Unused import (pep8 F401) — RESOLVED (by new patchset)
 
 **Author:** Zuul | **File:** `openstack_dashboard/dashboards/settings/mfa/workflows.py` L15 | **PS:** 23
 
 > pep8: F401 'django.conf.settings as django_settings' imported but unused
 
-**AI Assessment:** Automated pep8 finding from PS23. The unused import `django_settings` was likely left over from the `OPENSTACK_KEYSTONE_MFA_ISSUER` code that Benjamin said he would remove (see [CMT-JAN-3](#cmt-jan-3)). PS25 exists and has Verified+1, so this was presumably fixed.
+**AI Assessment:** Automated pep8 finding from PS23. The unused import `django_settings` was left over from the `OPENSTACK_KEYSTONE_MFA_ISSUER` code that Benjamin removed (see [CMT-JAN-3](#cmt-jan-3)). Fixed in subsequent patchsets — PS27 passes CI.
 
-**Status for Owen:** No action needed — fixed by subsequent patchset (PS25 passes CI).
+**Status for Owen:** No action needed — fixed by subsequent patchset.
 
 ---
 
 ## Inline Comments — Releasenotes
 
 <a name="cmt-rad-6"></a>
+
 ### CMT-RAD-6 — Mention new settings in release notes — RESOLVED
 
 **Author:** Radomir Dopieralski | **File:** `releasenotes/notes/enable-mfa-from-horizon-d53fd6f4453b2abb.yaml` L14 | **PS:** 16
@@ -542,11 +690,11 @@ The review has significant momentum — the author has been responsive to feedba
 
 | Reviewer | Total Comments | Resolved | Pending |
 |----------|--------------|----------|---------|
-| Ivan Anfimov | 14 | 11 | 3 |
-| Benjamin Lasseye (author) | 21 | 21 | 0 |
+| Ivan Anfimov | 14 | 14 | 0 |
+| Benjamin Lasseye (author) | 30 | 26 | 4 |
 | Radomir Dopieralski | 6 | 6 | 0 |
-| Jan Jasek | 4 | 0 | 4 |
-| Owen McGonagle | 6 | 2 | 4 |
+| Jan Jasek | 7 | 3 | 4 |
+| Owen McGonagle | 9 | 5 | 4 |
 | Zuul | 1 | 1 | 0 |
 
 ---
@@ -555,11 +703,13 @@ The review has significant momentum — the author has been responsive to feedba
 
 | Item | Severity | Status |
 |------|----------|--------|
-| Hardcoded URL breaks WEBROOT deployments (404 for QR code) | HIGH | OPEN |
-| Verify dead code removal (`OPENSTACK_KEYSTONE_MFA_ISSUER` / L216 function) | HIGH | OPEN |
-| Jan Jasek wizard UX confirmation needed | MEDIUM | OPEN |
-| Ivan's Google Authenticator suggestions (2 inline threads) | MEDIUM | OPEN |
-| Commit message typos (3 typos) | LOW | OPEN |
-| Help text wording nit (dropdown reference) | LOW | OPEN |
-| Missing space in string | LOW | OPEN |
-| No Code-Review votes yet — needs 2x CR+2 from core reviewers | HIGH | OPEN |
+| ~~Hardcoded URL breaks WEBROOT deployments (404 for QR code)~~ | ~~HIGH~~ | ~~RESOLVED~~ |
+| ~~Verify dead code removal (`OPENSTACK_KEYSTONE_MFA_ISSUER` / L216 function)~~ | ~~HIGH~~ | ~~RESOLVED~~ |
+| ~~Jan Jasek wizard UX confirmation needed~~ | ~~MEDIUM~~ | ~~RESOLVED~~ |
+| ~~Ivan's Google Authenticator suggestions (2 inline threads)~~ | ~~MEDIUM~~ | ~~RESOLVED~~ |
+| ~~Commit message typos (3 typos)~~ | ~~LOW~~ | ~~RESOLVED~~ |
+| ~~Help text wording nit (dropdown reference)~~ | ~~LOW~~ | ~~RESOLVED~~ |
+| ~~Missing space in string~~ | ~~LOW~~ | ~~RESOLVED~~ |
+| MFA credential delete workflow issue — Jan can't reproduce Owen's report | HIGH | OPEN |
+| Jan Jasek Code-Review -1 needs to be cleared | HIGH | OPEN |
+| No CR+2 votes yet — needs 2x CR+2 from core reviewers | HIGH | OPEN |

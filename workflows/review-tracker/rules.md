@@ -2,6 +2,42 @@
 
 This document contains rules and guidelines for the Review Tracker workflow agent.
 
+## Clickable Navigation Links at Top of Every Artifact (Non-negotiable)
+
+Every artifact this workflow produces MUST begin with clickable markdown links
+to the key external resources a reader needs to continue their analysis. These
+links appear in the artifact header — the first few lines after the title.
+
+**Hard rule:** Any URL that appears in the header section of an artifact MUST be
+a clickable markdown link (`[text](url)`), NEVER a bare URL. This includes:
+
+- Gerrit review URLs
+- Jira ticket URLs
+- Launchpad bug/blueprint URLs
+- GitHub source file URLs
+- Any other external reference a visitor would need
+
+**Format:**
+```markdown
+**Review:** [https://review.opendev.org/c/openstack/horizon/+/992714](https://review.opendev.org/c/openstack/horizon/+/992714)
+```
+
+**NOT:**
+```markdown
+**Review:** https://review.opendev.org/c/openstack/horizon/+/992714
+```
+
+**Why:** Artifacts are published to web dashboards where bare URLs are not
+automatically linked. A visitor reading the artifact must be able to click
+through to the source review, ticket, or file immediately — without having
+to copy-paste URLs. This is a usability requirement, not a style preference.
+
+**Enforcement:** On every `--recheck` or regeneration, verify the header links
+are clickable before writing the artifact. If a bare URL is found in the header,
+wrap it as a markdown link before proceeding.
+
+---
+
 ## Accuracy
 
 ### Verify Before Documenting
@@ -234,6 +270,41 @@ This ensures every rendered page has a direct link to the source of truth .md fi
 2. Edit the source file directly from the dashboard view
 3. Track changes via git history
 4. Share authoritative links (not copies)
+
+---
+
+## Final Report
+
+### Generation Rules
+
+- ONLY generate when the review status is MERGED on Gerrit
+- ALWAYS verify status via API before generating (never trust cached state)
+- ALWAYS use Gerrit API data for quantitative metrics (not tracker artifact)
+- Use tracker artifact ONLY for qualitative data (thread assessments, scan history)
+- NEVER generate a final report without an existing tracker artifact
+
+### Accuracy Rules
+
+- Response times must be computed from actual Gerrit timestamps, not estimated
+- Patchset reasoning must be derived from the `kind` field and message timeline
+- CI pass rate must count all Verified messages, including rechecks
+- Reviewer engagement dates must match the first comment/vote from each reviewer
+- "Idle time" is the longest gap between any two consecutive events (not patchsets)
+
+### Honesty Rules
+
+- The Lessons Learned section MUST contain at least one "What Could Improve" entry
+- Do NOT attribute CI failures to "flaky tests" without evidence from the logs
+- Do NOT minimize long response gaps — measure and report them factually
+- If a patchset was unnecessary (e.g., could have been squashed), note it
+- Present facts neutrally — the report describes what happened, not what should have happened
+
+### Dashboard Integration
+
+- Case ID: same as tracker (`REVIEW-TRACKER-{number}`)
+- Artifact filename: `final-report-{number}.md` → renamed to `final-report.md` on publish
+- Published in the same run as the tracker update (when both change in the same invocation)
+- Or as a new run if published independently
 
 ---
 
