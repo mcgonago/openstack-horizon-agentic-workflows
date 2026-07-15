@@ -667,6 +667,46 @@ For each detected change:
    - Strikethrough entries whose threads are now RESOLVED
    - If a reviewer replied to clarify or change their request, add an updated entry under the new scan
 
+#### Step R5: Deep-Dive Marker Protocol
+
+After updating the tracker document on recheck, if any new OPEN threads
+were detected that have:
+- Status: POSTED — WAITING FOR RESPONSE or NEEDS YOUR RESPONSE
+- Severity: HIGH (blocking comment with Code-Review -1)
+- A code-archaeology or documentation question
+
+Inform the user:
+
+> {CMT-XXX-N} is a new blocking comment that may benefit from investigation.
+> Say "investigate {CMT-XXX-N}" to start a deep-dive capture, or continue
+> with other tasks.
+
+When the user triggers an investigation (says "investigate", "deep dive",
+"figure out", or similar):
+
+1. Emit a `DEEP-DIVE-START` HTML comment marker with fields:
+   `review`, `thread`, `topic`, `timestamp` (required); `run`, `file`,
+   `reviewer` (optional).
+
+2. Proceed with the investigation naturally — fetch diffs, search code,
+   read docs, formulate responses.
+
+3. When the investigation concludes (fix applied, response drafted, or user
+   says "done"), emit a `DEEP-DIVE-END` HTML comment marker with fields:
+   `review`, `thread`, `outcome`, `summary`, `timestamp`.
+
+4. Inform the user that the deep dive is captured and can be extracted:
+
+```
+python3 ioshaworkflow/scripts/extract-deep-dive.py \
+  --mirror-log ~/.claude/mirror-logs/claude-mirror-{today}.md \
+  --review {number}
+```
+
+**IMPORTANT:** Do NOT emit markers during routine `--recheck` operations.
+Markers are ONLY emitted when the user explicitly requests investigation.
+See `rules.md` Deep-Dive Capture Protocol for the full marker format.
+
 ---
 
 ### Create Patch Mode

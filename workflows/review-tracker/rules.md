@@ -358,3 +358,65 @@ This ensures every rendered page has a direct link to the source of truth .md fi
 - If bridge crash: capture stderr, log, mark "analysis failed", continue
 - If output file missing: log error, mark "no output", continue
 - Tracker ALWAYS completes, bridge failures are non-fatal
+
+---
+
+## Deep-Dive Capture Protocol
+
+### When to Emit Markers
+
+Emit `DEEP-DIVE-START` and `DEEP-DIVE-END` HTML comment markers when:
+
+1. The user explicitly asks to investigate a comment thread
+2. The user says "deep dive", "investigate", "figure out", or similar
+3. You are about to research a reviewer's question that requires
+   looking at code, docs, or external resources
+
+### Marker Format
+
+Markers MUST be HTML comments (`<!-- ... -->`) so they are invisible
+when rendered but preserved in mirror logs.
+
+Start marker:
+```html
+<!-- DEEP-DIVE-START
+review: {number}
+thread: {CMT-XXX-N}
+topic: {one-line description}
+timestamp: {ISO 8601}
+-->
+```
+
+End marker:
+```html
+<!-- DEEP-DIVE-END
+review: {number}
+thread: {CMT-XXX-N}
+outcome: {fix-applied|response-drafted|needs-discussion|wont-fix|deferred}
+summary: {one-line summary}
+timestamp: {ISO 8601}
+-->
+```
+
+Optional fields in the start marker: `run`, `file`, `reviewer`.
+
+### Never Emit Without User Intent
+
+Do NOT emit markers silently. The user must have expressed intent to
+investigate. Routine `--recheck` operations do not trigger markers.
+
+### Extraction
+
+After a deep-dive session, extract with:
+
+```bash
+python3 ioshaworkflow/scripts/extract-deep-dive.py \
+  --mirror-log ~/.claude/mirror-logs/claude-mirror-{date}.md \
+  --review {number}
+```
+
+Or use the wrapper:
+
+```bash
+bash ioshaworkflow/scripts/publish-deep-dives.sh {number}
+```
