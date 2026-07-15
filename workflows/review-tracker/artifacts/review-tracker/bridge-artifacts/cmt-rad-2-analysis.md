@@ -3,8 +3,8 @@
 **Question:** "Same here, the policy is called 'reactivate'."
 
 **Reviewer:** Radomir Dopieralski
-**Review:** 986458
-**File:** `openstack_dashboard/dashboards/project/images/images/tables.py:265`
+**Review:** [https://review.opendev.org/c/openstack/horizon/+/986458](https://review.opendev.org/c/openstack/horizon/+/986458)
+**File:** [`openstack_dashboard/dashboards/project/images/images/tables.py:265`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L265)
 
 ---
 
@@ -58,4 +58,4 @@ ownership check is CONSISTENT with existing image action patterns.
 ## References
 
 - See [CMT-RAD-1 analysis](cmt-rad-1-analysis.md) for complete framework investigation
-- `openstack_dashboard/dashboards/project/images/images/tables.py:260-265` — ReactivateImage.allowed()
+- [`openstack_dashboard/dashboards/project/images/images/tables.py:260-265`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L260-L265) — ReactivateImage.allowed()

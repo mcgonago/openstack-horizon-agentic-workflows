@@ -363,8 +363,8 @@ Use this format (matching the `templates/code-archaeology-analysis.md.template`)
 **Question:** {question text from reviewer}
 
 **Reviewer:** {reviewer name}
-**Review:** {review number}
-**File:** `{file}:{line}`
+**Review:** [{gerrit URL}]({gerrit URL})
+**File:** [`{file}:{line}`](https://github.com/openstack/horizon/blob/master/{file}#L{line})
 
 ---
 
@@ -372,7 +372,7 @@ Use this format (matching the `templates/code-archaeology-analysis.md.template`)
 
 ### 1. Where is `{attribute}` set?
 
-**Source:** `{source_file}:{source_line}`
+**Source:** [`{source_file}:{source_line}`](https://github.com/openstack/horizon/blob/master/{source_file}#L{source_line})
 ```python
 {code snippet showing initialization}
 ```
@@ -397,14 +397,20 @@ Use this format (matching the `templates/code-archaeology-analysis.md.template`)
 
 ## Suggested Response
 
-> {ready-to-paste Gerrit reply}
+> {ready-to-paste Gerrit reply — file refs stay plain text here, Gerrit doesn't render markdown}
 
 ---
 
 ## References
 
-{list of file:line references used in the analysis}
+{list of clickable file:line references — every entry MUST use
+[`path:line`](https://github.com/openstack/horizon/blob/master/path#Lline) format}
 ```
+
+**IMPORTANT:** All file references in bridge artifacts MUST be clickable markdown
+links per the Clickable URLs rule in rules.md. The ONLY exceptions are:
+1. File references inside code blocks (``` ``` ```)
+2. File references inside `> quoted` suggested responses (meant for Gerrit copy-paste)
 
 Create the bridge-artifacts directory if it doesn't exist:
 

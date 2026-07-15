@@ -3,8 +3,8 @@
 **Question:** "I think this should be an RBAC policy check... In this case the allowed method should not be needed?"
 
 **Reviewer:** Radomir Dopieralski
-**Review:** 986458
-**File:** `openstack_dashboard/dashboards/project/images/images/tables.py:233`
+**Review:** [https://review.opendev.org/c/openstack/horizon/+/986458](https://review.opendev.org/c/openstack/horizon/+/986458)
+**File:** [`openstack_dashboard/dashboards/project/images/images/tables.py:233`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L233)
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### 1. How do `policy_rules` and `allowed()` interact?
 
-**Source:** `horizon/tables/actions.py:130-137`
+**Source:** [`horizon/tables/actions.py:130-137`](https://github.com/openstack/horizon/blob/master/horizon/tables/actions.py#L130-L137)
 ```python
 def _allowed(self, request, datum):
     policy_check = utils_settings.import_setting("POLICY_CHECK_FUNCTION")
@@ -53,8 +53,7 @@ activate/deactivate pattern, both use `policy_rules` + `allowed()` with state ch
 ### 3. What about the ownership check?
 
 The ownership check (`image.owner != request.user.tenant_id`) follows the existing pattern
-in this file — `DeleteImage` (line 135), `EditImage` (line 163), and `UpdateMetadata`
-(line 201) all perform the same check.
+in this file — [`DeleteImage` (line 135)](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L135), [`EditImage` (line 163)](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L163), and [`UpdateMetadata` (line 201)](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L201) all perform the same check.
 
 However, no image action overrides `get_policy_target()` — the RBAC check runs with an
 empty target dict `{}`. This means Glance's owner-based policy rules cannot evaluate at
@@ -94,10 +93,10 @@ propagation — a larger refactor not scoped to this patch.
 
 ## References
 
-- `horizon/tables/actions.py:130-137` — `_allowed()` combining policy_check and allowed()
-- `horizon/tables/actions.py:115-121` — `get_policy_target()` returns empty dict by default
-- `openstack_dashboard/dashboards/project/images/images/tables.py:130-137` — DeleteImage.allowed() with same ownership pattern
-- `openstack_dashboard/dashboards/project/images/images/tables.py:160-166` — EditImage.allowed() with same ownership pattern
-- `openstack_dashboard/dashboards/project/images/images/tables.py:197-201` — UpdateMetadata.allowed() with same ownership pattern
-- `openstack_dashboard/dashboards/identity/domains/tables.py:147-149` — DisableDomainsAction.allowed() with state-only check (closest pattern match)
+- [`horizon/tables/actions.py:130-137`](https://github.com/openstack/horizon/blob/master/horizon/tables/actions.py#L130-L137) — `_allowed()` combining policy_check and allowed()
+- [`horizon/tables/actions.py:115-121`](https://github.com/openstack/horizon/blob/master/horizon/tables/actions.py#L115-L121) — `get_policy_target()` returns empty dict by default
+- [`openstack_dashboard/dashboards/project/images/images/tables.py:130-137`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L130-L137) — DeleteImage.allowed() with same ownership pattern
+- [`openstack_dashboard/dashboards/project/images/images/tables.py:160-166`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L160-L166) — EditImage.allowed() with same ownership pattern
+- [`openstack_dashboard/dashboards/project/images/images/tables.py:197-201`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L197-L201) — UpdateMetadata.allowed() with same ownership pattern
+- [`openstack_dashboard/dashboards/identity/domains/tables.py:147-149`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/identity/domains/tables.py#L147-L149) — DisableDomainsAction.allowed() with state-only check (closest pattern match)
 - 58 total actions in codebase with both `policy_rules` and `allowed()`
