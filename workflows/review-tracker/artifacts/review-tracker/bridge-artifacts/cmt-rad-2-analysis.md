@@ -30,6 +30,7 @@ already defined. The effective question becomes: **is `allowed()` redundant on `
 
 *Context for the inherited question: "is `allowed()` redundant with `policy_rules`?"*
 
+**Source:** [`openstack_dashboard/dashboards/project/images/images/tables.py:239-265`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L239-L265)
 ```python
 class ReactivateImage(tables.BatchAction):
     name = "reactivate"

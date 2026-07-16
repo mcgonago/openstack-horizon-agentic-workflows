@@ -470,6 +470,22 @@ links per the Clickable URLs rule in rules.md. The ONLY exceptions are:
 1. File references inside code blocks (``` ``` ```)
 2. File references inside `> quoted` suggested responses (meant for Gerrit copy-paste)
 
+**IMPORTANT — Source links on code blocks:** Every fenced code block that shows
+code from a specific file MUST have a `**Source:**` line immediately before it
+with a clickable GitHub link. A comment inside the code block (e.g.,
+`# Volume panel pattern (volumes/tables.py)`) is NOT a substitute — comments
+inside code blocks are not clickable. Format:
+
+```markdown
+**Source:** [`path/to/file.py:L1-L2`](https://github.com/openstack/horizon/blob/master/path/to/file.py#L1-L2)
+```python
+code here
+```
+```
+
+This does NOT apply to generic illustrative snippets with no specific file
+attribution, or code inside `> quoted` suggested responses.
+
 Create the bridge-artifacts directory if it doesn't exist:
 
 ```bash

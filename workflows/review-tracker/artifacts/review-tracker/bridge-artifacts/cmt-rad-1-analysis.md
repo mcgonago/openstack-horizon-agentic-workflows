@@ -81,21 +81,18 @@ The owner check is NOT unique to this patch -- it follows the established conven
 
 **The admin panel OVERRIDES the owner check for admins:**
 
+**Source:** [`openstack_dashboard/dashboards/admin/images/tables.py:29-41`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/admin/images/tables.py#L29-L41)
 ```python
-# AdminDeleteImage (admin/images/tables.py)
 class AdminDeleteImage(project_tables.DeleteImage):
     def allowed(self, request, image=None):
         if image and image.protected:
             return False
         return True   # No owner check -- admins can delete any image
 
-# AdminEditImage (admin/images/tables.py)
 class AdminEditImage(project_tables.EditImage):
     def allowed(self, request, image=None):
         return True   # No owner check -- admins can edit any image
 ```
-
-**Source:** [`openstack_dashboard/dashboards/admin/images/tables.py:29-41`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/admin/images/tables.py#L29-L41)
 
 This is the established Horizon pattern:
 - **Project panel** = owner check (defense-in-depth, assumes default policy)
@@ -111,8 +108,8 @@ This is the established Horizon pattern:
 
 The volume and instance panels use `PolicyTargetMixin` to pass resource ownership to the RBAC check, letting policy decide:
 
+**Source:** [`openstack_dashboard/dashboards/project/volumes/tables.py:47`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/volumes/tables.py#L47)
 ```python
-# Volume panel pattern (volumes/tables.py)
 class VolumePolicyTargetMixin(policy.PolicyTargetMixin):
     policy_target_attrs = (("project_id", 'os-vol-tenant-attr:tenant_id'),)
 ```
