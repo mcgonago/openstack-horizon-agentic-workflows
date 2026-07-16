@@ -1,0 +1,320 @@
+{
+  "created_at": "2026-07-15T20:13:07.150785+00:00",
+  "review_number": 986478,
+  "artifacts_dir": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-986478",
+  "verify_dir": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify",
+  "selected_groups": null,
+  "no_before": true,
+  "post_merge": false,
+  "recipe_override": "images-filter",
+  "devstack_override": "",
+  "started_at": "2026-07-15T20:18:41.123812+00:00",
+  "title": "Update filtering in the Images table",
+  "branch": "master",
+  "status": "NEW",
+  "topic": "de-angularize",
+  "owner": "Owen McGonagle",
+  "project": "openstack/horizon",
+  "patchset": 3,
+  "ref": "refs/changes/78/986478/3",
+  "files_changed": [
+    "openstack_dashboard/dashboards/project/images/images/tables.py",
+    "releasenotes/notes/images-project-filter-action-osprh16422.yaml",
+    "openstack_dashboard/dashboards/project/images/views.py",
+    "openstack_dashboard/dashboards/project/images/images/tests.py"
+  ],
+  "commit_message": "",
+  "dependencies": [],
+  "recipe": "images-filter",
+  "recipe_groups": [
+    "A",
+    "B",
+    "C"
+  ],
+  "phase_1_status": "completed",
+  "updated_at": "2026-07-15T20:20:14.677728+00:00",
+  "devstack_host": "localhost",
+  "admin_user": "admin",
+  "admin_password": "secret",
+  "deploy_mode": "local",
+  "horizon_port": 9000,
+  "horizon_url": "http://localhost:9000",
+  "devstack_connection": {
+    "mode": "virtctl",
+    "user": "ubuntu",
+    "vm": "omcgonag-horizon-devstack",
+    "namespace": "rhos-dfg-ui--runtime-int",
+    "identity_file": "/home/omcgonag/.ssh/id_ed25519",
+    "openrc": "~/devstack/openrc admin demo"
+  },
+  "test_resources": [
+    "openstack image show verify-seed-image 2>/dev/null && openstack image set --unprotect verify-seed-image 2>/dev/null && openstack image delete verify-seed-image 2>/dev/null || true",
+    "openstack image show verify-filter-qcow2 2>/dev/null && openstack image delete verify-filter-qcow2 2>/dev/null || true",
+    "openstack image show verify-filter-raw2 2>/dev/null && openstack image set --activate verify-filter-raw2 2>/dev/null && openstack image delete verify-filter-raw2 2>/dev/null || true",
+    "dd if=/dev/zero of=/tmp/tiny.img bs=1 count=1 2>/dev/null",
+    "qemu-img create -f qcow2 /tmp/tiny.qcow2 1M 2>/dev/null",
+    "openstack image create --disk-format raw --container-format bare --file /tmp/tiny.img verify-seed-image",
+    "openstack image create --disk-format qcow2 --container-format bare --file /tmp/tiny.qcow2 verify-filter-qcow2",
+    "openstack image create --disk-format raw --container-format bare --file /tmp/tiny.img verify-filter-raw2",
+    "openstack image set --deactivate verify-filter-raw2",
+    "rm -f /tmp/tiny.img /tmp/tiny.qcow2"
+  ],
+  "initial_keypair_count": 0,
+  "phase_2_status": "completed",
+  "phase_3_status": "skipped",
+  "phase_4_status": "skipped",
+  "after_commit": "7c8da59b2 Merge commit 'refs/changes/78/986478/3' of https://review.opendev.org/openstack/horizon into HEAD",
+  "horizon_log": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-986478/horizon-after.log",
+  "deploy_after": {
+    "commit": "7c8da59b2 Merge commit 'refs/changes/78/986478/3' of https://review.opendev.org/openstack/horizon into HEAD",
+    "angular_keypairs": false,
+    "url": "http://localhost:9000",
+    "ready": true,
+    "mode": "local"
+  },
+  "phase_5_status": "completed",
+  "test_results_after": [
+    {
+      "group": "A",
+      "label": "Panel Loading",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "A1_page_loads",
+          "status": "pass"
+        },
+        {
+          "name": "A2_breadcrumb_visible",
+          "status": "pass"
+        },
+        {
+          "name": "A3_table_visible",
+          "status": "pass"
+        },
+        {
+          "name": "A4_panel_type_detected",
+          "status": "pass",
+          "panel_type": "python"
+        }
+      ],
+      "counts": {
+        "pass": 4,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "B",
+      "label": "Table Features",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "B1_search_filter",
+          "status": "pass",
+          "note": "filter functional"
+        },
+        {
+          "name": "B2_column_headers",
+          "status": "pass",
+          "headers": [
+            "Owner",
+            "Name",
+            "Type",
+            "Status",
+            "Visibility",
+            "Protected",
+            "Disk Format",
+            "Size",
+            "Actions"
+          ]
+        },
+        {
+          "name": "B3_row_actions_menu",
+          "status": "pass"
+        },
+        {
+          "name": "B4_batch_actions",
+          "status": "pass"
+        }
+      ],
+      "counts": {
+        "pass": 4,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "C",
+      "label": "Filter Action",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "C1_filter_dropdown_visible",
+          "status": "pass",
+          "details": {
+            "dropdown": true,
+            "input": true,
+            "button": true
+          }
+        },
+        {
+          "name": "C2_owner_filter_tabs_gone",
+          "status": "pass",
+          "note": "OwnerFilter tabs correctly removed",
+          "details": {
+            "fixed_filter_group": false,
+            "project_tab": false,
+            "public_tab": false
+          }
+        },
+        {
+          "name": "C3_filter_by_name",
+          "status": "pass",
+          "initial_count": 4,
+          "filtered_count": 1,
+          "filtered_names": [
+            "verify-seed-image"
+          ]
+        },
+        {
+          "name": "C4_filter_by_status",
+          "status": "pass",
+          "filtered_names": [
+            "cirros-0.6.3-x86_64-disk",
+            "verify-filter-qcow2",
+            "verify-seed-image"
+          ],
+          "note": "deactivated image correctly excluded"
+        },
+        {
+          "name": "C5_filter_by_disk_format",
+          "status": "pass",
+          "filtered_names": [
+            "verify-filter-raw2",
+            "verify-seed-image"
+          ],
+          "note": "qcow2 image correctly excluded"
+        },
+        {
+          "name": "C6_clear_filter_restores_all",
+          "status": "pass",
+          "filtered_count": 1,
+          "restored_count": 4,
+          "restored_names": [
+            "cirros-0.6.3-x86_64-disk",
+            "verify-filter-qcow2",
+            "verify-filter-raw2",
+            "verify-seed-image"
+          ]
+        }
+      ],
+      "counts": {
+        "pass": 6,
+        "fail": 0,
+        "error": 0
+      }
+    }
+  ],
+  "test_summary_after": {
+    "total_groups": 3,
+    "passed_groups": 3,
+    "failed_groups": 0,
+    "total_tests": 14,
+    "passed_tests": 14,
+    "failed_tests": 0
+  },
+  "phase_6_status": "completed",
+  "verdict": "PASS",
+  "parity_matrix": [
+    {
+      "test": "A1_page_loads",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "A2_breadcrumb_visible",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "A3_table_visible",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "A4_panel_type_detected",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "B1_search_filter",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "B2_column_headers",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "B3_row_actions_menu",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "B4_batch_actions",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C1_filter_dropdown_visible",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C2_owner_filter_tabs_gone",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C3_filter_by_name",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C4_filter_by_status",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C5_filter_by_disk_format",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C6_clear_filter_restores_all",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    }
+  ],
+  "manual_testing_guide_path": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-986478/manual_testing_guide.md",
+  "manual_testing_guide_tests": 14,
+  "phase_7_status": "completed",
+  "total_duration_s": 93.5057303905487,
+  "completed_at": "2026-07-15T20:20:14.677724+00:00",
+  "horizon_pid": 110956
+}

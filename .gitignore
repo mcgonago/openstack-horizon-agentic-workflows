@@ -1,5 +1,7 @@
 # Review and analysis artifacts — generated output, not source
 artifacts/
+# But keep verify artifacts (source of truth for dashboard [src] links)
+!workflows/verify/artifacts/
 
 # OS / editor noise
 .DS_Store

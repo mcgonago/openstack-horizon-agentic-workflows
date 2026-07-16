@@ -1,0 +1,3 @@
+# Exclude bulk files from verify artifacts
+*/horizon-checkout/
+*.log
