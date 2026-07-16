@@ -270,8 +270,19 @@ Follow the thread grouping algorithm from the agent persona:
 reviewer comments and produce actual bridge analysis artifacts with ready-to-paste
 Gerrit responses.
 
-This step runs on BOTH initial scan and `--recheck`. On recheck, focus on NEW or
-UNRESOLVED threads that were added since the last run.
+This step runs on BOTH initial scan and `--recheck`. On recheck, run deep-dive for:
+
+1. **NEW threads** — threads that did not exist in the previous scan
+2. **UPDATED threads** — existing UNRESOLVED threads that received new replies since
+   the last scan. A reviewer self-correcting or clarifying their own comment
+   (reply in same thread, same author) changes the effective question and requires
+   re-analysis. When an existing bridge artifact exists for an updated thread,
+   **regenerate it** — the new reply may change the verdict and suggested response.
+   Update the tracker's AI Assessment, Answer Summary, and Suggested Response
+   sections for the thread accordingly.
+
+Skip deep-dive for threads that are RESOLVED or have no new replies since the
+last scan and already have a current bridge artifact.
 
 ##### 3.5.1: Detect Bridge Opportunities
 
@@ -509,9 +520,9 @@ Run `/horizon-code-review {number}` manually for code analysis.
 
 ## Scan Log
 
-| # | Date | Scanner | Notes |
-|---|------|---------|-------|
-| 1 | {today} | AI (Claude) | Initial scan — {N} comment threads from {M} reviewers |
+| # | Timestamp | Scanner | Notes |
+|---|-----------|---------|-------|
+| 1 | {ISO 8601 UTC, e.g. 2026-07-15T16:30:00Z} | AI (Claude) | Initial scan — {N} comment threads from {M} reviewers |
 
 ---
 
@@ -611,7 +622,11 @@ Each thread section uses this format:
 
 #### Step R1: Check for Changes
 
-Read the existing tracker document. Parse the Scan Log to find the date of the most recent scan.
+Read the existing tracker document. Parse the Scan Log to find the timestamp of the most recent scan.
+
+The Scan Log stores full ISO 8601 timestamps (e.g., `2026-07-15T15:40:00Z`). If parsing
+an older tracker with day-only dates (e.g., `2026-07-15`), treat the date as `YYYY-MM-DDT00:00:00Z`
+and always proceed to Step R2 (day-level comparison is too coarse for same-day rechecks).
 
 Fetch the review's `updated` timestamp:
 
@@ -619,7 +634,7 @@ Fetch the review's `updated` timestamp:
 GET https://review.opendev.org/changes/{change-id}
 ```
 
-If `updated` is not newer than the last scan date: report "No changes since scan #N on YYYY-MM-DD. Review last updated {timestamp}." and STOP.
+If `updated` is not newer than the last scan timestamp: report "No changes since scan #N on {timestamp}. Review last updated {timestamp}." and STOP.
 
 #### Step R2: Fetch Current State
 
@@ -631,12 +646,13 @@ Compare the fetched data against the existing document:
 
 | What to check | How to detect |
 |---------------|--------------|
-| New comments | `updated` timestamp > last scan date |
+| New comments | `updated` timestamp > last scan timestamp |
 | Thread status changes | `unresolved` field differs from documented status |
 | New patchset | Current PS number > documented PS number |
 | Vote changes | Current label values differ from Score Summary |
 | CI results | Verified label changed |
 | New replies | Comments with `in_reply_to` pointing to documented threads |
+| Updated threads | Existing thread received a new reply (same or different author) since last scan — the reply may change the question context, especially reviewer self-corrections |
 
 #### Step R4: Update Document
 
@@ -661,6 +677,12 @@ For each detected change:
 7. Update header metadata (patchset, Zuul status)
 
 **Do not** rewrite sections with no changes. **Do not** re-generate AI assessments for unchanged threads.
+
+**Exception — updated threads:** When an existing thread receives a new reply that changes
+the effective question (e.g., a reviewer self-corrects or clarifies their original comment),
+re-generate the AI assessment, update the Deep Dive section (if `--deep-dive`), and revise
+the Suggested Response. A reviewer reply in the same thread by the same author is a strong
+signal that the question context has shifted — always re-analyze these.
 
 8. Update "What Needs to Change":
    - Add a new `### Scan #N` sub-section for any new blocking comments

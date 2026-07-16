@@ -20,11 +20,12 @@ Run `/horizon-code-review 986458` manually for code analysis.
 
 ## Scan Log
 
-| # | Date | Scanner | Notes |
-|---|------|---------|-------|
+| # | Timestamp | Scanner | Notes |
+|---|-----------|---------|-------|
 | 1 | 2026-07-15 | AI (Claude) | Initial scan — 1 comment thread from 1 reviewer |
 | 2 | 2026-07-15 | AI (Claude) | Recheck — PS5 commit message update, WIP removed, PS6 rebase. All votes reset. |
 | 3 | 2026-07-15 | AI (Claude) | Recheck — New reviewer Radomir Dopieralski: Code-Review -1 with 2 inline threads on `tables.py`. Zuul Verified +1 on PS6. Deep-dive analysis on both threads. |
+| 4 | 2026-07-16T01:27:00Z | AI (Claude) | Recheck — No new activity. Gerrit last updated 2026-07-15T16:05:00Z (Zuul V+1). Upgraded Scan Log to ISO timestamps. Deep-dive bridge artifacts for CMT-RAD-1, CMT-RAD-2 remain current — Radomir's self-correction reply already captured in Scan #3. |
 
 ---
 

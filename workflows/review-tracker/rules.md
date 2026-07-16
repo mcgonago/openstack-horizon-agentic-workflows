@@ -119,17 +119,20 @@ Every recheck that detects changes MUST add a Change Log entry:
 - Only modify sections with actual changes detected from the API
 - Do NOT regenerate the entire document on recheck
 - Do NOT rewrite AI assessments for unchanged threads
+- DO re-generate AI assessments for threads that received new replies since the last scan — a self-correction or clarification from the reviewer changes the effective question
 - Do NOT re-fetch file diffs unless a new patchset added or removed files
 
 ### Early Exit
 
-- If Gerrit `updated` timestamp is unchanged since the last scan, STOP immediately
-- Report "No changes since scan #N on YYYY-MM-DD" and exit
+- If Gerrit `updated` timestamp is not newer than the last scan's ISO 8601 timestamp, STOP immediately
+- Report "No changes since scan #N on {timestamp}" and exit
 - Do NOT make additional API calls beyond the timestamp check when no changes are detected
+- If the existing Scan Log uses day-only dates (legacy format), always proceed to full fetch — day-level comparison is too coarse for same-day rechecks
 
 ### Scan Log
 
 - Every recheck adds a row to the Scan Log table, even if no changes were found
+- The Timestamp column MUST use full ISO 8601 UTC format (e.g., `2026-07-15T16:30:00Z`) — NOT day-only dates
 - The Notes column summarizes what was found (e.g., "2 new comments on CMT-JAN-1" or "No new activity")
 
 ## Document Structure

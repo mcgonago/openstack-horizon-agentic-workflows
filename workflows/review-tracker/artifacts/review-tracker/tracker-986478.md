@@ -4,9 +4,9 @@
 **Title:** Update filtering in the Images table
 **Author:** Owen McGonagle
 **Status:** NEW
-**Current Patchset:** 2
-**Zuul:** Verified-1 (build failed on PS2, 2026-04-28)
-**Files Changed:** 4 ([`openstack_dashboard/dashboards/project/images/images/tables.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py), [`openstack_dashboard/dashboards/project/images/views.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/views.py), [`openstack_dashboard/dashboards/project/images/images/tests.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tests.py), [`releasenotes/notes/images-project-filter-action-osprh16422.yaml`](https://github.com/openstack/horizon/blob/master/releasenotes/notes/images-project-filter-action-osprh16422.yaml))
+**Current Patchset:** 4
+**Zuul:** Pending (PS4 just uploaded 2026-07-15, awaiting CI)
+**Files Changed:** 5 ([`openstack_dashboard/dashboards/project/images/images/tables.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py), [`openstack_dashboard/dashboards/project/images/views.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/views.py), [`openstack_dashboard/dashboards/project/images/images/tests.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tests.py), [`openstack_dashboard/dashboards/project/images/tests.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/tests.py), [`openstack_dashboard/dashboards/project/instances/tests.py`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/instances/tests.py))
 **Reviewers:** Tatiana Ovchinnikova
 
 ---
@@ -40,6 +40,20 @@ None
 | # | Date | Scanner | Notes |
 |---|------|---------|-------|
 | 1 | 2026-07-15 | AI (Claude) | Initial scan — 1 comment thread from 1 reviewer |
+| 2 | 2026-07-15 | AI (Claude) | Recheck — PS3+PS4 uploaded, CMT-TAT-1 resolved, all votes reset, new file added |
+
+---
+
+## Change Log
+
+### Scan #2 — 2026-07-15
+
+1. **UPDATED** Header: Patchset 2 → 4, Zuul status pending, files 4 → 5
+2. **UPDATED** [CMT-TAT-1](#cmt-tat-1): Status POSTED → RESOLVED (unresolved=false, blueprint reference added in PS3)
+3. **UPDATED** [Score Summary](#score-summary): All votes reset to 0 (CR-1 outdated by PS3, Verified-1 outdated by PS4)
+4. **NEW** PS3 uploaded (2026-07-15): Commit message update — added blueprint reference
+5. **NEW** PS4 uploaded (2026-07-15): Code rework — new file `instances/tests.py`, updated `images/tests.py`
+6. **UPDATED** What Needs to Change: ~~CMT-TAT-1 blueprint reference~~ resolved
 
 ---
 
@@ -47,21 +61,12 @@ None
 
 ### Scan #1 — 2026-07-15
 
-**CMT-TAT-1: Add blueprint reference to commit message**
+~~**CMT-TAT-1: Add blueprint reference to commit message**~~
 
-- **File:** `/COMMIT_MSG`
-- **What the code does now:** Commit message has no blueprint reference
-- **What the reviewer wants:** Add `Partially-Implements: blueprint removing-angularjs` to the commit message since this is part of the de-angularize topic
-- **Suggested fix:**
-  ```
-  # before (end of commit message)
-  Change-Id: ...
-
-  # after
-  Partially-Implements: blueprint removing-angularjs
-  Change-Id: ...
-  ```
-- **Why:** Tatiana wants de-angularize work tracked against the removing-angularjs blueprint for project tracking purposes
+- ~~**File:** `/COMMIT_MSG`~~
+- ~~**What the code does now:** Commit message has no blueprint reference~~
+- ~~**What the reviewer wants:** Add `Partially-Implements: blueprint removing-angularjs` to the commit message since this is part of the de-angularize topic~~
+- ~~**Resolved:** Blueprint reference added in PS3 (commit message update, 2026-07-15)~~
 
 ---
 
@@ -69,30 +74,32 @@ None
 
 ### Overall Status
 
-Review 986478 was created on 2026-04-28 with 2 patchsets (PS2 was a commit message update).
-CI failed on PS2 with Zuul Verified-1. Tatiana reviewed on 2026-06-30, giving Code-Review-1
-with one patchset-level comment requesting a blueprint reference. The review has been idle
-since 2026-06-30.
+Review 986478 was created on 2026-04-28. After Tatiana's CR-1 requesting a blueprint reference
+(2026-06-30), Owen pushed PS3 (commit message update adding the blueprint reference) and PS4
+(code rework) on 2026-07-15. All votes have been reset — Tatiana's CR-1 was outdated by PS3,
+and Zuul's Verified-1 on PS3 was outdated by PS4. CI is pending on PS4. The file set grew
+from 4 to 5 files (added `instances/tests.py`, changed `images/tests.py`). Tatiana's only
+comment thread is now resolved.
 
 ### Score Summary
 
 | Label | Value | Who | Date |
 |-------|-------|-----|------|
-| Verified | -1 | Zuul | 2026-04-28 |
-| Code-Review | -1 | Tatiana Ovchinnikova | 2026-06-30 |
+| Verified | 0 | Zuul | (pending on PS4) |
+| Code-Review | 0 | Tatiana Ovchinnikova | (outdated by PS3) |
 | Workflow | 0 | — | — |
 
 ### What You Should Do Next
 
-1. **Fix the CI failure** — PS2 has Zuul Verified-1. Investigate the build failure and push a new patchset that passes CI
-2. **Add blueprint reference** — Add `Partially-Implements: blueprint removing-angularjs` to the commit message as Tatiana requested
+1. **Wait for CI on PS4** — Zuul is running on the new patchset. Monitor for pass/fail
+2. **Request re-review from Tatiana** — All her concerns are addressed; she needs to re-review PS4
 3. **Consider code suggestions** — Review the docker format mapping and filter guard consistency points from the initial code review
 
 ### Open Threads Requiring Attention
 
 | Thread | File | Status | Owner | Priority |
 |--------|------|--------|-------|----------|
-| [CMT-TAT-1](#cmt-tat-1) | /PATCHSET_LEVEL | POSTED — NEEDS YOUR RESPONSE | Owen | HIGH |
+| ~~[CMT-TAT-1](#cmt-tat-1)~~ | ~~/PATCHSET_LEVEL~~ | ~~RESOLVED~~ | ~~—~~ | ~~—~~ |
 
 ---
 
@@ -100,7 +107,7 @@ since 2026-06-30.
 
 <a name="cmt-tat-1"></a>
 
-### CMT-TAT-1 — Blueprint reference request — POSTED — NEEDS YOUR RESPONSE
+### CMT-TAT-1 — Blueprint reference request — RESOLVED
 
 **Author:** Tatiana Ovchinnikova | **File:** /PATCHSET_LEVEL | **PS:** 2
 
@@ -112,7 +119,7 @@ since 2026-06-30.
 
 **AI Assessment:** Tatiana is asking for standard OpenStack commit message hygiene — linking de-angularize work to the removing-angularjs blueprint. This is a straightforward request. The CR-1 is purely to flag this as a required action, not a code quality objection.
 
-**Status for Owen:** Add `Partially-Implements: blueprint removing-angularjs` to the commit message in the next patchset. This can be combined with the CI fix push.
+**Status for Owen:** ~~Add blueprint reference~~ — Done. Blueprint reference added in PS3. Thread resolved.
 
 ---
 
@@ -120,7 +127,7 @@ since 2026-06-30.
 
 | Reviewer | Total | Resolved | Pending |
 |----------|-------|----------|---------|
-| Tatiana Ovchinnikova | 1 | 0 | 1 |
+| Tatiana Ovchinnikova | 1 | 1 | 0 |
 
 ---
 
@@ -128,6 +135,7 @@ since 2026-06-30.
 
 | Item | Severity | Status |
 |------|----------|--------|
-| Fix Zuul CI failure (Verified-1) | HIGH | OPEN |
-| Add `Partially-Implements: blueprint removing-angularjs` to commit message | HIGH | OPEN |
+| Wait for Zuul CI on PS4 | HIGH | OPEN |
+| ~~Add `Partially-Implements: blueprint removing-angularjs` to commit message~~ | ~~HIGH~~ | ~~RESOLVED (PS3)~~ |
+| Request re-review from Tatiana | MEDIUM | OPEN |
 | Address docker format mapping suggestion (optional) | LOW | OPEN |
