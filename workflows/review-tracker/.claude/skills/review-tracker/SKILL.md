@@ -371,15 +371,62 @@ Use this format (matching the `templates/code-archaeology-analysis.md.template`)
 ```markdown
 # Bridge Analysis: {THREAD-ID}
 
-**Question:** {question text from reviewer}
-
 **Reviewer:** {reviewer name}
 **Review:** [{gerrit URL}]({gerrit URL})
 **File:** [`{file}:{line}`](https://github.com/openstack/horizon/blob/master/{file}#L{line})
 
 ---
 
+## Comment Evolution
+
+{If the thread has a single comment (no self-correction):}
+
+### Original Comment (PS{N}, {HH:MM} UTC)
+
+> {full quoted comment text}
+
+**Reviewer's ask:** {one-line summary of what they want}
+
+{If the thread has a self-correction (reviewer replied to their own comment):}
+
+### Original Comment (PS{N}, {HH:MM} UTC)
+
+> {full quoted original comment text}
+
+**Reviewer's ask:** {one-line summary of original ask}
+
+### Self-Correction (PS{N}, {HH:MM} UTC)
+
+> {full quoted self-correction text}
+
+**Updated ask:** {one-line summary of what the reviewer is ACTUALLY asking now}
+
+### What Changed
+
+{Explain how the self-correction changes the question. State explicitly which
+ask (original or updated) the analysis below addresses.}
+
+{If this thread inherits a self-correction from another thread (e.g., "Same here"):}
+
+### Original Comment (PS{N}, {HH:MM} UTC)
+
+> {full quoted comment text}
+
+**Reviewer's ask:** {one-line summary}
+
+### Inherited Self-Correction
+
+{Explain how a self-correction from another thread applies here, with a link
+to the source thread's analysis.}
+
+---
+
 ## Investigation
+
+{Each analysis section begins with an italic line anchoring it to a specific
+comment from the Comment Evolution section, e.g.:}
+
+*Answers the updated question: "{quoted ask}"*
 
 ### 1. Where is `{attribute}` set?
 
