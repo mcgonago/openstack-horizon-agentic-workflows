@@ -25,11 +25,18 @@ Run `/horizon-code-review 986458` manually for code analysis.
 | 1 | 2026-07-15 | AI (Claude) | Initial scan — 1 comment thread from 1 reviewer |
 | 2 | 2026-07-15 | AI (Claude) | Recheck — PS5 commit message update, WIP removed, PS6 rebase. All votes reset. |
 | 3 | 2026-07-15 | AI (Claude) | Recheck — New reviewer Radomir Dopieralski: Code-Review -1 with 2 inline threads on `tables.py`. Zuul Verified +1 on PS6. Deep-dive analysis on both threads. |
-| 4 | 2026-07-16T01:27:00Z | AI (Claude) | Recheck — No new activity. Gerrit last updated 2026-07-15T16:05:00Z (Zuul V+1). Upgraded Scan Log to ISO timestamps. Deep-dive bridge artifacts for CMT-RAD-1, CMT-RAD-2 remain current — Radomir's self-correction reply already captured in Scan #3. |
+| 4 | 2026-07-16T01:27:00Z | AI (Claude) | Recheck — No new Gerrit activity. Surfaced Radomir's self-correction on CMT-RAD-1 as explicit Comment Update — reframed thread assessments and What Needs to Change around his updated question. Upgraded Scan Log to ISO timestamps. |
 
 ---
 
 ## Change Log
+
+### Scan #4 — 2026-07-16T01:27:00Z
+
+1. **UPDATED** [CMT-RAD-1](#cmt-rad-1): Surfaced Radomir's self-correction as a **Comment Update** — his reply supersedes the original ask (changed from "add RBAC" to "is `allowed()` redundant?"). AI Assessment, Suggested Response, and What Needs to Change updated to address the corrected question explicitly.
+2. **UPDATED** [CMT-RAD-2](#cmt-rad-2): Added Comment Update noting this comment inherits the self-correction context from CMT-RAD-1.
+3. **UPDATED** [What Needs to Change — Scan #3](#scan-3--2026-07-15-1): Reframed both entries around Radomir's updated question, not the original.
+4. **UPDATED** [Scan Log](#scan-log): Upgraded from day-only dates to ISO 8601 timestamps.
 
 ### Scan #3 — 2026-07-15
 
@@ -76,19 +83,19 @@ get strikethrough.
 
 ### Scan #3 — 2026-07-15
 
-**CMT-RAD-1: Clarify why `allowed()` is needed alongside `policy_rules` on DeactivateImage**
+**CMT-RAD-1: Respond to Radomir's updated question — is `allowed()` redundant with `policy_rules`?**
 
 - **File:** [`openstack_dashboard/dashboards/project/images/images/tables.py:233`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L233)
 - **What the code does now:** `DeactivateImage` defines both `policy_rules = (("image", "deactivate"),)` and an `allowed()` method that checks `image.protected`, `image.owner`, and `image.status == "active"`.
-- **What the reviewer asks:** Whether the `allowed()` method is redundant given `policy_rules` already handles authorization.
-- **Action required:** Respond on Gerrit explaining the complementary design. No code change needed — `allowed()` handles state-based visibility (status check), `policy_rules` handles RBAC authorization. The framework combines them with AND logic. See [deep-dive analysis](bridge-artifacts/cmt-rad-1-analysis.md).
-- **Why:** Radomir initially thought `allowed()` duplicated the RBAC check, then noticed `policy_rules` exists and asked if `allowed()` is unnecessary. The answer is that `allowed()` is needed for the status filter — without it, the Deactivate button would appear on already-deactivated images.
+- **Comment update:** Radomir self-corrected his original comment. His initial ask was "add RBAC policy check" — but after noticing `policy_rules` is already defined, he pivoted to: "is the `allowed()` method then redundant?" **Address the updated question, not the original.**
+- **Action required:** Respond on Gerrit. Acknowledge his self-correction, then explain that `allowed()` is NOT redundant — it handles state-based visibility (status check), while `policy_rules` handles RBAC authorization. The framework combines them with AND logic. No code change needed. See [deep-dive analysis](bridge-artifacts/cmt-rad-1-analysis.md).
+- **Why:** Without the status check in `allowed()`, the Deactivate button would appear on already-deactivated images. RBAC policy cannot filter by image state. 58 actions in the codebase follow this same dual pattern.
 
-**CMT-RAD-2: Same clarification needed on ReactivateImage**
+**CMT-RAD-2: Same updated question applies to ReactivateImage**
 
 - **File:** [`openstack_dashboard/dashboards/project/images/images/tables.py:265`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L265)
 - **What the code does now:** `ReactivateImage` defines `policy_rules = (("image", "reactivate"),)` and `allowed()` checks `image.owner` and `image.status == "deactivated"`.
-- **What the reviewer asks:** Same as CMT-RAD-1 — references "Same here".
+- **Comment update:** Posted before Radomir's self-correction on CMT-RAD-1, but "Same here" logically inherits the updated context — `ReactivateImage` also has `policy_rules` already defined.
 - **Action required:** Respond on Gerrit referencing the DeactivateImage explanation. No code change needed. See [deep-dive analysis](bridge-artifacts/cmt-rad-2-analysis.md).
 
 ---
@@ -155,10 +162,17 @@ This review adds Deactivate and Reactivate row actions to the Images table as pa
 
 > I think this should be an RBAC policy check -- the logic you have here matches the default policy, but this can be changed in a particular OpenStack install. I believe the policy for this is in glance and is called "deactivate". You will need to pass the image as the target to the check.
 
-**Reply (Radomir Dopieralski, PS6):**
+**Self-Correction (Radomir Dopieralski, PS6):**
 > Sorry, I didn't notice that you already have policy_rules defined on this action. In this case the allowed method should not be needed?
 
-**AI Assessment:** This is a blocking question (Code-Review -1). Radomir initially thought the code was missing RBAC policy integration, then noticed `policy_rules` was already defined and pivoted to asking whether `allowed()` is then redundant. This is a nuanced architectural question — the answer is that `policy_rules` and `allowed()` serve complementary roles in Horizon's framework, and both are needed.
+**Comment Update:** Radomir's follow-up **supersedes his original comment**. His initial
+ask was "add an RBAC policy check" — but after noticing `policy_rules` is already defined,
+he pivoted to a different question: "is the `allowed()` method then redundant?" Your
+response should address the **updated question** (whether `allowed()` is needed alongside
+`policy_rules`), not the original one (adding RBAC). Acknowledge his self-correction
+to show you read both comments.
+
+**AI Assessment:** Blocking question (Code-Review -1). The updated question is architecturally nuanced — `policy_rules` and `allowed()` serve complementary roles in Horizon's framework (RBAC authorization vs. state-based visibility), and both are needed. The answer is: `allowed()` is NOT redundant, because it handles the status check that RBAC cannot.
 
 **Deep Dive:** [Code Analysis](bridge-artifacts/cmt-rad-1-analysis.md)
 
@@ -170,9 +184,9 @@ This review adds Deactivate and Reactivate row actions to the Images table as pa
 - The ownership check follows existing patterns from DeleteImage (line 135) and EditImage (line 163) in the same file
 
 **Suggested Response:**
-> Good point! The `allowed()` method and `policy_rules` serve complementary roles in Horizon's framework — `_allowed()` in `horizon/tables/actions.py:130` combines them with AND logic. `policy_rules` handles RBAC authorization ("can this user deactivate?"), while `allowed()` handles state-based visibility ("should we show the button on this specific image?"). Without the status check in `allowed()`, the Deactivate button would appear on already-deactivated images. The ownership check follows the existing pattern from `DeleteImage` (line 135) and `EditImage` (line 163) in this same file. Happy to discuss if you'd prefer a different approach.
+> Good catch noticing the `policy_rules`! You're right that RBAC is already handled there. The `allowed()` method serves a different purpose though — `_allowed()` in `horizon/tables/actions.py:130` combines them with AND logic. `policy_rules` handles RBAC authorization ("can this user deactivate?"), while `allowed()` handles state-based visibility ("should we show the button on this specific image?"). Without the status check in `allowed()`, the Deactivate button would appear on already-deactivated images. The ownership check follows the existing pattern from `DeleteImage` (line 135) and `EditImage` (line 163) in this same file. Happy to discuss if you'd prefer a different approach.
 
-**Status for Owen McGonagle:** Copy the suggested response to Gerrit.
+**Status for Owen McGonagle:** Copy the suggested response to Gerrit. The response acknowledges Radomir's self-correction and directly answers his updated question.
 
 <a name="cmt-rad-2"></a>
 
@@ -182,7 +196,13 @@ This review adds Deactivate and Reactivate row actions to the Images table as pa
 
 > Same here, the policy is called "reactivate".
 
-**AI Assessment:** This is a blocking reference comment tied to CMT-RAD-1. Radomir is flagging the same `allowed()` vs `policy_rules` question on the `ReactivateImage` action. The same analysis applies — `allowed()` is needed for the status check (`image.status == "deactivated"`).
+**Comment Update:** This comment was posted at the same time as CMT-RAD-1's original
+comment (before Radomir's self-correction). The "Same here" refers to his original ask
+("add RBAC policy check"), but Radomir's self-correction on CMT-RAD-1 logically applies
+here too — `ReactivateImage` also has `policy_rules` already defined. Address the
+**updated question** (is `allowed()` redundant?) and reference your CMT-RAD-1 response.
+
+**AI Assessment:** Blocking reference comment tied to CMT-RAD-1 (Code-Review -1). The same updated analysis applies — `allowed()` is needed for the status check (`image.status == "deactivated"`). RBAC cannot filter by image state.
 
 **Deep Dive:** [Code Analysis](bridge-artifacts/cmt-rad-2-analysis.md)
 
@@ -192,9 +212,9 @@ This review adds Deactivate and Reactivate row actions to the Images table as pa
 - See [CMT-RAD-1 analysis](bridge-artifacts/cmt-rad-1-analysis.md) for the complete investigation
 
 **Suggested Response:**
-> Same analysis as above — `policy_rules` handles RBAC ("can this user reactivate?") and `allowed()` handles state visibility ("only show on deactivated images"). Both are needed. See my reply on the DeactivateImage comment for the full reasoning.
+> Same reasoning as above — `policy_rules` handles RBAC ("can this user reactivate?") and `allowed()` handles state visibility ("only show on deactivated images"). Both are needed here too. See my reply on the DeactivateImage comment for the full details.
 
-**Status for Owen McGonagle:** Copy the suggested response to Gerrit.
+**Status for Owen McGonagle:** Copy the suggested response to Gerrit. Reference your CMT-RAD-1 response so Radomir sees the full reasoning.
 
 ---
 
