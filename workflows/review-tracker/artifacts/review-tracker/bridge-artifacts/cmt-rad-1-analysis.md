@@ -12,7 +12,7 @@
 
 > I think this should be an RBAC policy check -- the logic you have here matches the default policy, but this can be changed in a particular OpenStack install. I believe the policy for this is in glance and is called "deactivate". You will need to pass the image as the target to the check.
 
-**Radomir's ask:** Replace the `allowed()` logic with an RBAC policy check using Glance's "deactivate" policy.
+**Reviewer's ask:** Replace the `allowed()` logic with an RBAC policy check using Glance's "deactivate" policy.
 
 ### Self-Correction (PS6, 15:37 UTC)
 
@@ -20,112 +20,145 @@
 
 **Updated ask:** Since `policy_rules = (("image", "deactivate"),)` is already defined, is the `allowed()` method redundant?
 
+### Owen's Reply (PS6, 01:59 UTC Jul 16)
+
+> I believe without the check on allowed() we de-activate button may appear on already de-activiated messages - I am testing that theory right now.
+
+**Owen's response:** Defending the status check in `allowed()` as needed to prevent the button appearing on already-deactivated images.
+
+### Radomir's Follow-Up (PS6, 07:30 UTC Jul 16)
+
+> Good point. But the owner check seems harmful, especially if the policy is changed to allow changing images that are not yours?
+
+**Latest ask:** Radomir accepts the status check is needed but now specifically objects to the **owner check** (`image.owner != request.user.tenant_id`) as it overrides RBAC policy flexibility.
+
 ### What Changed
 
-Radomir's original comment assumed RBAC was missing. His self-correction acknowledges
-RBAC is already handled by `policy_rules` and pivots to a different question: whether
-`allowed()` is then unnecessary. **The analysis below addresses the updated question.**
+The conversation has evolved through three phases:
+1. "Add RBAC" (original) -- resolved: `policy_rules` already exists
+2. "Is `allowed()` redundant?" (self-correction) -- resolved: status check is needed
+3. **"The owner check is harmful"** (latest) -- this is the current question
+
+**The analysis below addresses the latest question: whether the hardcoded owner check in `allowed()` overrides RBAC policy and should be removed.**
 
 ---
 
 ## Investigation
 
-### 1. How do `policy_rules` and `allowed()` interact?
+*Answers the latest question: "the owner check seems harmful, especially if the policy is changed to allow changing images that are not yours?"*
 
-*Answers the updated question: "In this case the allowed method should not be needed?"*
+### 1. What does the owner check do?
 
-**Source:** [`horizon/tables/actions.py:130-137`](https://github.com/openstack/horizon/blob/master/horizon/tables/actions.py#L130-L137)
+**Source:** [`openstack_dashboard/dashboards/project/images/images/tables.py:231`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L231)
 ```python
-def _allowed(self, request, datum):
-    policy_check = utils_settings.import_setting("POLICY_CHECK_FUNCTION")
-    if policy_check and self.policy_rules:
-        target = self.get_policy_target(request, datum)
-        return (policy_check(self.policy_rules, request, target) and
-                self.allowed(request, datum))
-    return self.allowed(request, datum)
+def allowed(self, request, image=None):
+    if image is None:
+        return True
+    if image.protected:
+        return False
+    if image.owner != request.user.tenant_id:
+        return False          # <-- the line Radomir flags
+    return image.status == "active"
 ```
 
-**Lifecycle:** The framework combines both with AND logic:
-- `policy_rules` -> RBAC: "Is this user authorized to perform this action?" (Keystone/Glance policy)
-- `allowed()` -> State: "Is this action applicable to this particular datum?" (image status, ownership)
+The owner check hides the Deactivate button on images not owned by the current user's project. This runs AFTER the RBAC policy check (`policy_rules`), so even if Glance policy allows a user to deactivate other projects' images, the button still won't appear.
 
-Both must pass for the action button to appear.
+### 2. Is this a project-panel convention?
 
-### 2. Is `allowed()` needed when `policy_rules` exists?
+**Yes -- ALL existing image actions in the project panel have the same owner check:**
 
-*Directly addresses Radomir's self-correction: "the allowed method should not be needed?"*
+| Action | Owner Check | Source |
+|--------|------------|--------|
+| `DeleteImage` | `image.owner == request.user.tenant_id` | [`tables.py:135`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L135) |
+| `EditImage` | `image.owner == request.user.tenant_id` | [`tables.py:163`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L163) |
+| `UpdateMetadata` | `image.owner == request.user.project_id` | [`tables.py:201`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L201) |
+| **`DeactivateImage`** | **`image.owner != request.user.tenant_id`** | **`tables.py:231`** |
+| **`ReactivateImage`** | **`image.owner != request.user.tenant_id`** | **`tables.py:263`** |
 
-**Yes -- for the status check.** Without `allowed()`, the Deactivate button would appear on
-already-deactivated images (and on images with any status) as long as the user has RBAC
-permission. The RBAC policy "deactivate" controls *who* can deactivate, not *which images*
-should show the button.
+The owner check is NOT unique to this patch -- it follows the established convention.
 
-**Pattern evidence -- 58 actions** in the codebase use both `policy_rules` AND `allowed()`:
+### 3. How does the admin panel handle this?
 
-| Action | policy_rules | allowed() checks |
-|--------|-------------|------------------|
-| `DisableDomainsAction` | `identity:update_domain` | `datum.enabled` (state) |
-| `EnableDomainsAction` | `identity:update_domain` | `not datum.enabled` (state) |
-| `TogglePause` | `compute:os-pause-server` | instance status check |
-| `DeleteImage` | `delete_image` | `image.protected`, `image.owner` |
-| `EditImage` | `modify_image` | `image.status`, `image.owner` |
-| **`DeactivateImage`** | **`deactivate`** | **`image.status == "active"`** |
+**The admin panel OVERRIDES the owner check for admins:**
 
-The `DisableDomainsAction` / `EnableDomainsAction` pair is the closest analogue -- same
-activate/deactivate pattern, both use `policy_rules` + `allowed()` with state checks only.
+```python
+# AdminDeleteImage (admin/images/tables.py)
+class AdminDeleteImage(project_tables.DeleteImage):
+    def allowed(self, request, image=None):
+        if image and image.protected:
+            return False
+        return True   # No owner check -- admins can delete any image
 
-### 3. What about the ownership check?
+# AdminEditImage (admin/images/tables.py)
+class AdminEditImage(project_tables.EditImage):
+    def allowed(self, request, image=None):
+        return True   # No owner check -- admins can edit any image
+```
 
-*Addresses the original comment's implicit concern about matching "the default policy."*
+**Source:** [`openstack_dashboard/dashboards/admin/images/tables.py:29-41`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/admin/images/tables.py#L29-L41)
 
-The ownership check (`image.owner != request.user.tenant_id`) follows the existing pattern
-in this file -- [`DeleteImage` (line 135)](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L135), [`EditImage` (line 163)](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L163), and [`UpdateMetadata` (line 201)](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L201) all perform the same check.
+This is the established Horizon pattern:
+- **Project panel** = owner check (defense-in-depth, assumes default policy)
+- **Admin panel** = no owner check (trusts RBAC, admins act on any resource)
 
-However, no image action overrides `get_policy_target()` -- the RBAC check runs with an
-empty target dict `{}`. This means Glance's owner-based policy rules cannot evaluate at
-the Horizon level. The `allowed()` ownership check fills this gap as defense-in-depth.
+### 4. Is Radomir's concern valid?
 
-**Radomir is architecturally correct** that ideally this would be handled by RBAC alone,
-but that would require:
-1. Overriding `get_policy_target()` to pass the image as target
-2. Ensuring the Glance policy file is available to Horizon's policy engine
-3. This is not done by any existing image action in the codebase
+**Yes, architecturally.** The hardcoded owner check does override RBAC flexibility. If an operator modifies Glance policy to let users deactivate images from other projects, the Horizon button still won't appear.
 
-### 4. Is the ownership check strictly necessary?
+**But the concern applies equally to DeleteImage and EditImage**, which have had the same check for years. Removing it only from DeactivateImage/ReactivateImage while keeping it on DeleteImage/EditImage would be inconsistent.
 
-*Explores whether Radomir's original intuition (RBAC should handle everything) could work.*
+### 5. Alternative patterns in the codebase
 
-| Scenario | Without ownership check | With ownership check |
-|----------|------------------------|---------------------|
-| User's own images | Deactivate shows (correct) | Deactivate shows (correct) |
-| Other user's images (default policy) | RBAC policy hides it (probably) | `allowed()` hides it (definitely) |
-| Admin on other's images (permissive policy) | Deactivate shows (correct for admin) | `allowed()` HIDES it (may be wrong for admin) |
+The volume and instance panels use `PolicyTargetMixin` to pass resource ownership to the RBAC check, letting policy decide:
 
-The admin case is the tradeoff: the hardcoded ownership check prevents admins from using
-the action even if their RBAC policy permits it. However, this matches the existing behavior
-of `DeleteImage`, `EditImage`, and `UpdateMetadata` in this same file.
+```python
+# Volume panel pattern (volumes/tables.py)
+class VolumePolicyTargetMixin(policy.PolicyTargetMixin):
+    policy_target_attrs = (("project_id", 'os-vol-tenant-attr:tenant_id'),)
+```
 
-### 5. Verdict
+Image actions do NOT use `PolicyTargetMixin`. Adopting it would be the correct architectural fix but is a larger refactor affecting all image actions, not scoped to this patch.
 
-**Verdict:** The `allowed()` method is NECESSARY for the status check (answers Radomir's
-updated question). The ownership check is CONSISTENT with existing patterns but could
-theoretically be replaced by proper RBAC target propagation -- a larger refactor not scoped
-to this patch (acknowledges the spirit of Radomir's original comment).
+### 6. The missing admin actions
+
+**The admin panel currently has NO Deactivate/Reactivate actions** -- `AdminImagesTable.row_actions` only includes `AdminEditImage`, `UpdateMetadata`, and `AdminDeleteImage`. This means admins currently cannot deactivate/reactivate images through the Horizon UI at all (they must use the CLI).
+
+Adding `AdminDeactivateImage` and `AdminReactivateImage` (without owner checks) to the admin panel would be the natural follow-up.
+
+### 7. Verdict
+
+**Verdict:** Radomir's concern about the owner check is **VALID in principle** but:
+
+1. The owner check **matches all existing image actions** in the project panel (DeleteImage, EditImage, UpdateMetadata)
+2. The admin panel **overrides** to remove it -- this is the established convention
+3. Removing it only from DeactivateImage would be **inconsistent**
+4. The proper fix (PolicyTargetMixin or removing all owner checks) is a **larger refactor** not scoped to this patch
+
+**Recommended approach:** Keep the owner check for consistency, offer to either (a) remove it if Radomir feels strongly (but then all image actions should change together), or (b) add admin panel actions without owner checks as a follow-up.
 
 ---
 
 ## Suggested Response
 
-> Good catch noticing the `policy_rules`! You're right that RBAC is already handled there. The `allowed()` method serves a different purpose though -- `_allowed()` in `horizon/tables/actions.py:130` combines them with AND logic. `policy_rules` handles RBAC authorization ("can this user deactivate?"), while `allowed()` handles state-based visibility ("should we show the button on this specific image?"). Without the status check in `allowed()`, the Deactivate button would appear on already-deactivated images. The ownership check follows the existing pattern from `DeleteImage` (line 135) and `EditImage` (line 163) in this same file. Happy to discuss if you'd prefer a different approach.
+> Good point -- you're right that the hardcoded owner check does override RBAC flexibility. If an operator changes the Glance policy to let non-owners deactivate images, the button still wouldn't appear.
+>
+> I kept the owner check because it matches the existing convention for all image actions in the project panel -- DeleteImage (line 135), EditImage (line 163), and UpdateMetadata (line 201) all do the same check. The admin panel overrides it (AdminDeleteImage and AdminEditImage both return True without owner checks).
+>
+> I can go either way:
+> 1. Keep the owner check for consistency with the existing actions (and add AdminDeactivateImage/AdminReactivateImage to the admin panel in a follow-up)
+> 2. Remove the owner check from DeactivateImage/ReactivateImage to be more policy-flexible -- but that would make them inconsistent with Delete/Edit
+>
+> Which approach would you prefer? Or should the owner check removal be a separate patch that addresses all image actions together?
 
 ---
 
 ## References
 
 - [`horizon/tables/actions.py:130-137`](https://github.com/openstack/horizon/blob/master/horizon/tables/actions.py#L130-L137) -- `_allowed()` combining policy_check and allowed()
-- [`horizon/tables/actions.py:115-121`](https://github.com/openstack/horizon/blob/master/horizon/tables/actions.py#L115-L121) -- `get_policy_target()` returns empty dict by default
-- [`openstack_dashboard/dashboards/project/images/images/tables.py:130-137`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L130-L137) -- DeleteImage.allowed() with same ownership pattern
-- [`openstack_dashboard/dashboards/project/images/images/tables.py:160-166`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L160-L166) -- EditImage.allowed() with same ownership pattern
-- [`openstack_dashboard/dashboards/project/images/images/tables.py:197-201`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L197-L201) -- UpdateMetadata.allowed() with same ownership pattern
-- [`openstack_dashboard/dashboards/identity/domains/tables.py:147-149`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/identity/domains/tables.py#L147-L149) -- DisableDomainsAction.allowed() with state-only check (closest pattern match)
-- 58 total actions in codebase with both `policy_rules` and `allowed()`
+- [`openstack_dashboard/dashboards/project/images/images/tables.py:130-137`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L130-L137) -- DeleteImage.allowed() with same owner check
+- [`openstack_dashboard/dashboards/project/images/images/tables.py:160-166`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L160-L166) -- EditImage.allowed() with same owner check
+- [`openstack_dashboard/dashboards/project/images/images/tables.py:197-201`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L197-L201) -- UpdateMetadata.allowed() with same owner check
+- [`openstack_dashboard/dashboards/admin/images/tables.py:29-34`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/admin/images/tables.py#L29-L34) -- AdminDeleteImage overrides to remove owner check
+- [`openstack_dashboard/dashboards/admin/images/tables.py:37-41`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/admin/images/tables.py#L37-L41) -- AdminEditImage overrides to remove owner check
+- [`openstack_dashboard/dashboards/admin/images/tables.py:87-91`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/admin/images/tables.py#L87-L91) -- AdminImagesTable.row_actions (no deactivate/reactivate)
+- [`openstack_dashboard/dashboards/project/volumes/tables.py:47`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/volumes/tables.py#L47) -- VolumePolicyTargetMixin using policy_target_attrs (alternative pattern)

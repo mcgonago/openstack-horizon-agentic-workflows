@@ -26,10 +26,18 @@ Run `/horizon-code-review 986458` manually for code analysis.
 | 2 | 2026-07-15 | AI (Claude) | Recheck — PS5 commit message update, WIP removed, PS6 rebase. All votes reset. |
 | 3 | 2026-07-15 | AI (Claude) | Recheck — New reviewer Radomir Dopieralski: Code-Review -1 with 2 inline threads on `tables.py`. Zuul Verified +1 on PS6. Deep-dive analysis on both threads. |
 | 4 | 2026-07-16T01:27:00Z | AI (Claude) | Recheck — No new Gerrit activity. Surfaced Radomir's self-correction on CMT-RAD-1 as explicit Comment Update — reframed thread assessments and What Needs to Change around his updated question. Upgraded Scan Log to ISO timestamps. |
+| 5 | 2026-07-16T13:45:00Z | AI (Claude) | Recheck — New replies: Owen responded on CMT-RAD-1 (01:59 UTC), Radomir followed up (07:30 UTC) pivoting to owner check concern. Deep-dive regenerated. |
 
 ---
 
 ## Change Log
+
+### Scan #5 — 2026-07-16T13:45:00Z
+
+1. **UPDATED** [CMT-RAD-1](#cmt-rad-1): Two new replies — Owen's response (01:59 UTC) defending status check, then Radomir's follow-up (07:30 UTC) pivoting to **owner check** concern: "the owner check seems harmful, especially if the policy is changed to allow changing images that are not yours?" Thread evolves from "is allowed() redundant?" to "is the owner check harmful?"
+2. **UPDATED** [Deep Dive](bridge-artifacts/cmt-rad-1-analysis.md): Regenerated analysis — owner check matches all existing image actions (DeleteImage, EditImage, UpdateMetadata). Admin panel overrides remove it. Radomir's concern is valid in principle but removing it only here would be inconsistent.
+3. **UPDATED** [What Needs to Change — Scan #5](#scan-5--2026-07-16): New entry addressing owner check question with three response options.
+4. **UPDATED** [CMT-RAD-2](#cmt-rad-2): No new replies, but status updated — owner check concern from CMT-RAD-1 applies here too.
 
 ### Scan #4 — 2026-07-16T01:27:00Z
 
@@ -91,12 +99,27 @@ get strikethrough.
 - **Action required:** Respond on Gerrit. Acknowledge his self-correction, then explain that `allowed()` is NOT redundant — it handles state-based visibility (status check), while `policy_rules` handles RBAC authorization. The framework combines them with AND logic. No code change needed. See [deep-dive analysis](bridge-artifacts/cmt-rad-1-analysis.md).
 - **Why:** Without the status check in `allowed()`, the Deactivate button would appear on already-deactivated images. RBAC policy cannot filter by image state. 58 actions in the codebase follow this same dual pattern.
 
-**CMT-RAD-2: Same updated question applies to ReactivateImage**
+**CMT-RAD-2: Same owner check concern applies to ReactivateImage**
 
 - **File:** [`openstack_dashboard/dashboards/project/images/images/tables.py:265`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L265)
 - **What the code does now:** `ReactivateImage` defines `policy_rules = (("image", "reactivate"),)` and `allowed()` checks `image.owner` and `image.status == "deactivated"`.
-- **Comment update:** Posted before Radomir's self-correction on CMT-RAD-1, but "Same here" logically inherits the updated context — `ReactivateImage` also has `policy_rules` already defined.
-- **Action required:** Respond on Gerrit referencing the DeactivateImage explanation. No code change needed. See [deep-dive analysis](bridge-artifacts/cmt-rad-2-analysis.md).
+- **Comment update (inherited from CMT-RAD-1 Scan #5):** Radomir's owner check concern on CMT-RAD-1 applies equally here. Whatever decision is made on the DeactivateImage owner check should be applied consistently to ReactivateImage.
+- **Action required:** Respond on Gerrit referencing the DeactivateImage explanation. The decision on the owner check applies to both actions. See [deep-dive analysis](bridge-artifacts/cmt-rad-2-analysis.md).
+
+### Scan #5 — 2026-07-16
+
+**CMT-RAD-1: Respond to Radomir's owner check concern**
+
+- **File:** [`openstack_dashboard/dashboards/project/images/images/tables.py:231`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L231)
+- **What the code does now:** `DeactivateImage.allowed()` returns `False` when `image.owner != request.user.tenant_id`, hiding the button on images not owned by the current user's project.
+- **Context:** Radomir accepted the status check is needed (his earlier concern) but now flags the owner check as "harmful" because it overrides RBAC policy flexibility. If an operator changes Glance policy to let users deactivate other projects' images, the Horizon button still won't appear.
+- **Investigation findings (deep-dive):**
+  - The owner check matches ALL existing image actions: `DeleteImage` ([line 135](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L135)), `EditImage` ([line 163](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L163)), `UpdateMetadata` ([line 201](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L201))
+  - The admin panel overrides remove the check: `AdminDeleteImage` and `AdminEditImage` both return `True` without owner checks ([admin/images/tables.py:29-41](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/admin/images/tables.py#L29-L41))
+  - The admin panel currently has NO Deactivate/Reactivate actions at all
+  - The volume panel uses `PolicyTargetMixin` with `policy_target_attrs` as the proper architectural alternative, but image actions don't use this pattern
+- **Action required:** Respond to Radomir. Three possible approaches — see [deep-dive analysis](bridge-artifacts/cmt-rad-1-analysis.md) for the suggested response offering Radomir the choice.
+- **Why:** This is a valid architectural concern, but removing the owner check only from this patch while keeping it on DeleteImage/EditImage would be inconsistent. The response should acknowledge the concern and let Radomir decide the scope.
 
 ---
 
@@ -106,7 +129,7 @@ get strikethrough.
 
 This review adds Deactivate and Reactivate row actions to the Images table as part of the de-angularize initiative (topic: `de-angularize`). The implementation is clean — two new `BatchAction` subclasses (`DeactivateImage`, `ReactivateImage`) wired into `ImagesTable.row_actions`, with test updates for the new action count.
 
-**Since Scan #2:** Zuul Verified +1 on PS6 (CI passes). Radomir Dopieralski reviewed PS6 and left Code-Review -1 with 2 inline threads on `tables.py`. He questions whether the `allowed()` method is redundant with `policy_rules` on both `DeactivateImage` (line 233) and `ReactivateImage` (line 265). After posting his initial comment, Radomir self-corrected — he noticed `policy_rules` was already defined and asked if `allowed()` is then unnecessary. Deep-dive analysis confirms `allowed()` IS needed for state-based visibility (status check), and the ownership check follows existing patterns in this file.
+**Since Scan #4:** Owen replied on CMT-RAD-1 (01:59 UTC Jul 16) defending the status check in `allowed()`. Radomir responded (07:30 UTC Jul 16) accepting the status check but pivoting to a new concern: the **owner check** (`image.owner != request.user.tenant_id`) is "harmful" because it overrides RBAC policy flexibility. Deep-dive analysis confirms the owner check matches all existing image actions (`DeleteImage`, `EditImage`, `UpdateMetadata`) and the admin panel overrides remove it. Radomir's concern is architecturally valid but the convention is established. The conversation now needs a decision: keep for consistency, remove here, or address all image actions together.
 
 ### Score Summary
 
@@ -118,8 +141,8 @@ This review adds Deactivate and Reactivate row actions to the Images table as pa
 
 ### What You Should Do Next
 
-1. **Respond to Radomir on Gerrit** — Use the suggested responses from the deep-dive analysis to explain why `allowed()` is needed alongside `policy_rules`. The framework's `_allowed()` method (horizon/tables/actions.py:130) combines both with AND logic. No code change required.
-2. **Wait for re-review** — After responding, wait for Radomir to acknowledge the explanation and potentially update his vote
+1. **Respond to Radomir on Gerrit (CMT-RAD-1 and CMT-RAD-2)** — Use the suggested responses from the deep-dive analysis. Acknowledge his valid concern about the owner check overriding RBAC, show you've researched the codebase convention, and offer him the choice: (a) keep for consistency, (b) remove here, or (c) address all image actions in a separate patch.
+2. **Wait for Radomir's decision** — The outcome may require a code change (removing owner checks) or not (keeping for consistency). No action until he responds.
 3. **Get Code-Review +2 (x2) and Workflow +1** — Still need two +2 votes from core reviewers
 
 ### Open Threads Requiring Attention
@@ -156,65 +179,78 @@ This review adds Deactivate and Reactivate row actions to the Images table as pa
 
 <a name="cmt-rad-1"></a>
 
-### CMT-RAD-1 — `allowed()` vs `policy_rules` on DeactivateImage — NEEDS YOUR RESPONSE
+### CMT-RAD-1 — Owner check in `DeactivateImage.allowed()` — NEEDS YOUR RESPONSE
 
 **Author:** Radomir Dopieralski | **File:** [`openstack_dashboard/dashboards/project/images/images/tables.py:233`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L233) | **PS:** 6
 
 > I think this should be an RBAC policy check -- the logic you have here matches the default policy, but this can be changed in a particular OpenStack install. I believe the policy for this is in glance and is called "deactivate". You will need to pass the image as the target to the check.
 
-**Self-Correction (Radomir Dopieralski, PS6):**
+**Self-Correction (Radomir Dopieralski, PS6, 15:37 UTC):**
 > Sorry, I didn't notice that you already have policy_rules defined on this action. In this case the allowed method should not be needed?
 
-**Comment Update:** Radomir's follow-up **supersedes his original comment**. His initial
-ask was "add an RBAC policy check" — but after noticing `policy_rules` is already defined,
-he pivoted to a different question: "is the `allowed()` method then redundant?" Your
-response should address the **updated question** (whether `allowed()` is needed alongside
-`policy_rules`), not the original one (adding RBAC). Acknowledge his self-correction
-to show you read both comments.
+**Owen's Reply (PS6, 01:59 UTC Jul 16):**
+> I believe without the check on allowed() we de-activate button may appear on already de-activiated messages - I am testing that theory right now.
 
-**AI Assessment:** Blocking question (Code-Review -1). The updated question is architecturally nuanced — `policy_rules` and `allowed()` serve complementary roles in Horizon's framework (RBAC authorization vs. state-based visibility), and both are needed. The answer is: `allowed()` is NOT redundant, because it handles the status check that RBAC cannot.
+**Radomir's Follow-Up (PS6, 07:30 UTC Jul 16):**
+> Good point. But the owner check seems harmful, especially if the policy is changed to allow changing images that are not yours?
+
+**Comment Update (Scan #5):** The conversation has evolved through three phases:
+1. "Add RBAC" — resolved: `policy_rules` already exists
+2. "Is `allowed()` redundant?" — resolved: Radomir accepts the status check is needed ("Good point")
+3. **"The owner check is harmful"** — current question. Radomir's concern: the hardcoded `image.owner != request.user.tenant_id` check overrides RBAC policy flexibility. If an operator changes Glance policy to let users act on images they don't own, the Horizon button still won't appear.
+
+**AI Assessment:** Blocking concern (Code-Review -1). Radomir's point is architecturally valid — hardcoded owner checks override RBAC policy flexibility. However, this is the established convention for ALL image actions in the project panel (`DeleteImage`, `EditImage`, `UpdateMetadata` all have the same check). The admin panel overrides to remove them (`AdminDeleteImage`, `AdminEditImage` return `True`). Removing the owner check only from `DeactivateImage` while keeping it on `DeleteImage`/`EditImage` would be inconsistent. This needs a decision from Radomir: keep for consistency, remove here, or address all image actions together.
 
 **Deep Dive:** [Code Analysis](bridge-artifacts/cmt-rad-1-analysis.md)
 
 **Answer Summary:**
-- The framework's `_allowed()` method (horizon/tables/actions.py:130) combines `policy_check(policy_rules)` AND `allowed()` with AND logic — they are complementary, not redundant
-- `policy_rules` handles RBAC authorization ("can this user deactivate?"); `allowed()` handles state-based visibility ("should the button show on this image?")
-- Without `allowed()`, the Deactivate button would appear on already-deactivated images
-- 58 actions in the codebase use both `policy_rules` and `allowed()` — this is the standard pattern
-- The ownership check follows existing patterns from DeleteImage (line 135) and EditImage (line 163) in the same file
+- Radomir accepts the status check is needed; his concern has narrowed to the **owner check** specifically
+- The owner check matches ALL existing image actions: `DeleteImage` ([line 135](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L135)), `EditImage` ([line 163](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L163)), `UpdateMetadata` ([line 201](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L201))
+- The admin panel overrides remove the check: `AdminDeleteImage` and `AdminEditImage` both return `True` ([admin/images/tables.py:29-41](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/admin/images/tables.py#L29-L41))
+- The admin panel currently has NO Deactivate/Reactivate actions — admins can't use these through the UI
+- The volume panel uses `PolicyTargetMixin` as the proper architectural alternative, but no image action uses it
 
 **Suggested Response:**
-> Good catch noticing the `policy_rules`! You're right that RBAC is already handled there. The `allowed()` method serves a different purpose though — `_allowed()` in `horizon/tables/actions.py:130` combines them with AND logic. `policy_rules` handles RBAC authorization ("can this user deactivate?"), while `allowed()` handles state-based visibility ("should we show the button on this specific image?"). Without the status check in `allowed()`, the Deactivate button would appear on already-deactivated images. The ownership check follows the existing pattern from `DeleteImage` (line 135) and `EditImage` (line 163) in this same file. Happy to discuss if you'd prefer a different approach.
+> Good point -- you're right that the hardcoded owner check does override RBAC flexibility. If an operator changes the Glance policy to let non-owners deactivate images, the button still wouldn't appear.
+>
+> I kept the owner check because it matches the existing convention for all image actions in the project panel -- DeleteImage (line 135), EditImage (line 163), and UpdateMetadata (line 201) all do the same check. The admin panel overrides it (AdminDeleteImage and AdminEditImage both return True without owner checks).
+>
+> I can go either way:
+> 1. Keep the owner check for consistency with the existing actions (and add AdminDeactivateImage/AdminReactivateImage to the admin panel in a follow-up)
+> 2. Remove the owner check from DeactivateImage/ReactivateImage to be more policy-flexible -- but that would make them inconsistent with Delete/Edit
+>
+> Which approach would you prefer? Or should the owner check removal be a separate patch that addresses all image actions together?
 
-**Status for Owen McGonagle:** Copy the suggested response to Gerrit. The response acknowledges Radomir's self-correction and directly answers his updated question.
+**Status for Owen McGonagle:** Copy the suggested response to Gerrit. This response acknowledges Radomir's valid concern, shows you've researched the codebase convention, and gives him the choice on how to proceed.
 
 <a name="cmt-rad-2"></a>
 
-### CMT-RAD-2 — `allowed()` vs `policy_rules` on ReactivateImage — NEEDS YOUR RESPONSE
+### CMT-RAD-2 — Owner check in `ReactivateImage.allowed()` — NEEDS YOUR RESPONSE
 
 **Author:** Radomir Dopieralski | **File:** [`openstack_dashboard/dashboards/project/images/images/tables.py:265`](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L265) | **PS:** 6
 
 > Same here, the policy is called "reactivate".
 
-**Comment Update:** This comment was posted at the same time as CMT-RAD-1's original
-comment (before Radomir's self-correction). The "Same here" refers to his original ask
-("add RBAC policy check"), but Radomir's self-correction on CMT-RAD-1 logically applies
-here too — `ReactivateImage` also has `policy_rules` already defined. Address the
-**updated question** (is `allowed()` redundant?) and reference your CMT-RAD-1 response.
+**Comment Update (inherited from CMT-RAD-1 Scan #5):** This comment was posted before
+Radomir's self-correction and follow-ups on CMT-RAD-1, but "Same here" logically
+inherits all the context. Radomir's latest concern (the owner check being harmful)
+applies equally to `ReactivateImage`, which has the same `image.owner != request.user.tenant_id`
+check at [line 263](https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/images/images/tables.py#L263).
 
-**AI Assessment:** Blocking reference comment tied to CMT-RAD-1 (Code-Review -1). The same updated analysis applies — `allowed()` is needed for the status check (`image.status == "deactivated"`). RBAC cannot filter by image state.
+**AI Assessment:** Blocking reference comment tied to CMT-RAD-1 (Code-Review -1). Whatever decision is made about the owner check on `DeactivateImage` should be applied consistently to `ReactivateImage`. The status check (`image.status == "deactivated"`) is needed regardless — without it, the Reactivate button would appear on active images.
 
 **Deep Dive:** [Code Analysis](bridge-artifacts/cmt-rad-2-analysis.md)
 
 **Answer Summary:**
-- Same analysis as CMT-RAD-1 — `policy_rules` handles RBAC, `allowed()` handles state filtering
-- Without `allowed()`, the Reactivate button would appear on active images
+- Same analysis as CMT-RAD-1 — owner check concern applies equally
+- Status check is needed regardless of owner check decision
+- Whatever approach Radomir picks for CMT-RAD-1 should apply here too
 - See [CMT-RAD-1 analysis](bridge-artifacts/cmt-rad-1-analysis.md) for the complete investigation
 
 **Suggested Response:**
-> Same reasoning as above — `policy_rules` handles RBAC ("can this user reactivate?") and `allowed()` handles state visibility ("only show on deactivated images"). Both are needed here too. See my reply on the DeactivateImage comment for the full details.
+> Same approach here -- whatever we decide about the owner check on DeactivateImage will apply to ReactivateImage too. The status check (only showing Reactivate on deactivated images) is needed either way. See my reply on the DeactivateImage comment for the full details and the options.
 
-**Status for Owen McGonagle:** Copy the suggested response to Gerrit. Reference your CMT-RAD-1 response so Radomir sees the full reasoning.
+**Status for Owen McGonagle:** Copy the suggested response to Gerrit. Reference your CMT-RAD-1 response for the full owner check discussion.
 
 ---
 
@@ -223,7 +259,8 @@ here too — `ReactivateImage` also has `policy_rules` already defined. Address 
 | Reviewer | Total | Resolved | Pending |
 |----------|-------|----------|---------|
 | Tatiana Ovchinnikova | 1 | 1 | 0 |
-| Radomir Dopieralski | 3 | 0 | 3 |
+| Radomir Dopieralski | 4 | 0 | 4 |
+| Owen McGonagle | 1 | 0 | 1 |
 
 ---
 
@@ -233,6 +270,6 @@ here too — `ReactivateImage` also has `policy_rules` already defined. Address 
 |------|----------|--------|
 | ~~Add `Partially-Implements: blueprint removing-angularjs` to commit message~~ | ~~HIGH~~ | ~~RESOLVED~~ |
 | ~~Remove WIP status~~ | ~~MEDIUM~~ | ~~RESOLVED~~ |
-| Respond to Radomir on `allowed()` vs `policy_rules` (CMT-RAD-1, CMT-RAD-2) | HIGH | OPEN |
+| Respond to Radomir on owner check concern (CMT-RAD-1, CMT-RAD-2) | HIGH | OPEN |
 | Get Code-Review +2 (×2) and Workflow +1 | HIGH | OPEN |
 | ~~Zuul Verified +1 on PS6~~ | ~~MEDIUM~~ | ~~RESOLVED~~ |
