@@ -25,6 +25,7 @@ The user will provide one of:
 - A change number with `--final-report` flag (post-merge assessment with metrics)
 - A change number with `--update-artifact-dashboard` flag (publish to ioshaworkflow dashboard)
 - A change number with `--clone-at PATH` flag (specify where to clone the review code)
+- A change number with `--update-feature PATH` flag (apply code changes from external design/implementation docs)
 
 Flags are composable:
 
@@ -38,6 +39,9 @@ Flags are composable:
 /review-tracker 977939 --final-report --update-artifact-dashboard
 /review-tracker 986458 --clone-at /tmp/my-review
 /review-tracker 986458 --clone-at /tmp/my-review --create-patch --verify-patch
+/review-tracker 986478 --update-feature /path/to/IOSHAWORKFLOW_REVIEW_986478_ADD_VISIBILITY_OWNER
+/review-tracker 986478 --update-feature /path/to/FEATURE_BASE --verify-patch
+/review-tracker 986478 --update-feature /path/to/FEATURE_BASE --verify-patch --update-artifact-dashboard
 ```
 
 ## Process
@@ -60,6 +64,9 @@ Flags are composable:
    - If `clone_at` not set by flag, check `REVIEW_CLONE_ROOT` env var.
    - If neither set, use default: `IPROJECT_ROOT/projects/review_{number}/reviews/`
      where `IPROJECT_ROOT = /home/omcgonag/Work/mymcp/workspace/iproject`
+   - `--update-feature PATH`: set `update_feature = true`, set `feature_path = PATH`
+     PATH is the base path without `_DESIGN.md` / `_IMPLEMENTATION.md` suffixes.
+     Both `{PATH}_DESIGN.md` and `{PATH}_IMPLEMENTATION.md` must exist.
 
 3. **Determine primary mode**:
    - If `--status` flag: print current header + Open Threads table from existing tracker, STOP
@@ -79,6 +86,7 @@ Flags are composable:
        5. Set `publish_after = true` (auto-publish on first run)
 
 4. **Post-primary-mode actions** (in order):
+   - If `update_feature`: go to **Update Feature Mode** (Step U1)
    - If `create_patch`: go to **Create Patch Mode** (Step C1)
    - If `verify_patch`: go to **Verify Patch Mode** (Step V1)
    - If `publish_after`: go to **Publish Mode** (Step P1)
@@ -936,6 +944,216 @@ Print a summary to the developer:
   Push:      cd {checkout_path} && git review  (YOUR DECISION)
 
   Manifest:  {checkout_path}/PATCH_MANIFEST.md
+```
+
+---
+
+### Update Feature Mode
+
+Reads an external design/implementation document pair, parses the code change
+blocks from the implementation doc, and applies them to the Horizon checkout.
+This mode is the doc-driven counterpart to `--create-patch` (which reads from
+the tracker's "What Needs to Change" section).
+
+**CRITICAL:** This mode NEVER executes `git review`, `git push`, or any command
+that publishes changes to a remote. See rules.md NEVER-PUSH rule.
+
+#### Step U1: Validate Prerequisites
+
+1. Verify tracker artifact exists: `artifacts/review-tracker/tracker-{number}.md`
+   - If missing: report "Run `/review-tracker {number}` first to create the tracker." and STOP
+2. Verify both feature documents exist:
+   - `{feature_path}_DESIGN.md`
+   - `{feature_path}_IMPLEMENTATION.md`
+   - If either is missing: report "Missing document: {path}. Both _DESIGN.md and _IMPLEMENTATION.md are required." and STOP
+3. Read the design document — extract:
+   - Title from the `# ` heading
+   - Thread reference (e.g., CMT-RAD-2) from the `**Thread:**` line or body
+   - Summary of the change for the tracker update
+4. Read the implementation document — this is the primary input for code changes
+
+#### Step U2: Parse Code Changes
+
+Parse the implementation document's `## 2. Code Changes` section.
+For each `### Change N` subsection:
+
+1. Extract `file_path` from the `**File:**` line (format: `` `path:line` `` or `` `path:line-line` ``)
+2. Extract the `# before` and `# after` code blocks from the `**Code change:**` section
+   (same parsing logic as create-patch's Step C2, but reading from `**Code change:**`
+   instead of `**Suggested fix:**`)
+3. Extract the `thread_id` from the `**Thread:**` line (if present)
+4. Extract a brief description from the `**What needs to change:**` line
+5. If no before/after blocks found: mark as "manual intervention required" (skip this entry)
+
+Store as a list of change objects:
+
+```
+changes = [
+    {
+        "change_number": 1,
+        "thread_id": "CMT-RAD-2",
+        "file": "openstack_dashboard/dashboards/project/images/images/tables.py",
+        "line": "206-210",
+        "description": "Add visibility and owner to filter_choices",
+        "before": "<the before code block>",
+        "after": "<the after code block>",
+        "status": "pending"
+    },
+    ...
+]
+```
+
+#### Step U3: Locate or Clone the Review
+
+Same path resolution as Step C3 (Create Patch Mode):
+
+```
+if clone_at is set:
+    CLONE_ROOT = clone_at
+elif REVIEW_CLONE_ROOT env var is set:
+    CLONE_ROOT = REVIEW_CLONE_ROOT
+else:
+    CLONE_ROOT = IPROJECT_ROOT/projects/review_{number}/reviews
+```
+
+```
+CHECKOUT_DIR = ${CLONE_ROOT}/horizon-review-${number}
+LAST2 = number % 100, zero-padded to 2 digits
+```
+
+Check for existing checkout:
+
+- If `CHECKOUT_DIR` exists:
+  - Run `git status --porcelain` inside it
+  - If output is non-empty (dirty): report the dirty state, show `git status --short`, and STOP (No Clobber Rule)
+  - If clean: report "Reusing existing clean checkout" and skip to Step U4
+
+Clone and checkout the patchset:
+
+```bash
+git clone "https://review.opendev.org/${PROJECT}" "${CHECKOUT_DIR}"
+cd "${CHECKOUT_DIR}"
+git fetch origin "refs/changes/${LAST2}/${number}/${N}"
+git checkout FETCH_HEAD
+```
+
+#### Step U4: Apply Changes
+
+For each parsed change from Step U2, working in `${CHECKOUT_DIR}`:
+
+1. Read the target file at `change.file`
+2. Search for the `before` code block (fuzzy whitespace matching — strip leading
+   whitespace for comparison, preserve original indentation)
+3. If found: replace with `after` code block, preserving surrounding indentation.
+   Set status = `APPLIED`
+4. If not found, check if `after` code already exists in the file:
+   - If yes: set status = `ALREADY_APPLIED` (skip)
+   - If no: set status = `NOT_FOUND` (warning — file may have changed since
+     the implementation doc was written)
+
+Use the Edit tool to make the replacements — same as Step C4.
+
+#### Step U5: Stage and Amend
+
+Only if at least one change was applied (status = `APPLIED`):
+
+```bash
+cd "${CHECKOUT_DIR}"
+git add -A
+git commit --amend --no-edit
+```
+
+If no changes were applied (all skipped or not found): report the situation
+and STOP without amending.
+
+**Do NOT run `git review` or `git push`. EVER.**
+
+#### Step U6: Update Tracker Artifact
+
+Read the existing tracker artifact and add a new section documenting what
+was applied. Insert a `## Feature Updates` section before
+`## Where Things Are At / What To Do Next` (or append to it if it already
+exists from a prior `--update-feature` run):
+
+```markdown
+## Feature Updates
+
+### {design_title} — {date}
+
+**Source:** [{implementation_doc_basename}]({relative_path_to_implementation_doc})
+**Design:** [{design_doc_basename}]({relative_path_to_design_doc})
+**Threads Addressed:** {comma-separated thread IDs}
+
+| # | File | Change | Status |
+|---|------|--------|--------|
+| 1 | `{file}:{line}` | {description} | {APPLIED/ALREADY_APPLIED/NOT_FOUND} |
+
+**Checkout:** `{checkout_dir}`
+**Commit:** `{short SHA after amend}`
+```
+
+Also update the tracker's "What Needs to Change" section:
+- For each thread ID addressed by the feature update, if there is a matching
+  open entry in "What Needs to Change", apply strikethrough to mark it resolved
+- Add a note: "Resolved via `--update-feature` on {date}"
+
+#### Step U7: Generate Feature Manifest
+
+Write `${CHECKOUT_DIR}/FEATURE_MANIFEST.md`:
+
+```markdown
+# Feature Manifest — Review {number} PS{N}
+
+**Generated:** {YYYY-MM-DD HH:MM UTC}
+**Design:** {design_doc_path}
+**Implementation:** {implementation_doc_path}
+**Tracker:** tracker-{number}.md
+**Base Patchset:** PS{N}
+**Commit:** {short SHA after amend}
+
+## Applied Changes
+
+| # | Thread | File | Line | Description | Status |
+|---|--------|------|------|-------------|--------|
+| 1 | {thread_id} | `{file}` | {line} | {description} | {APPLIED/ALREADY_APPLIED/NOT_FOUND} |
+
+## Skipped (Manual Intervention Required)
+
+{Table of entries with status NOT_FOUND or no before/after blocks, or "None"}
+
+## How to Review
+
+    cd {checkout_path}
+    git diff HEAD~1
+    git log -1
+
+## How to Push (YOUR DECISION)
+
+    cd {checkout_path}
+    git review
+
+> **WARNING:** Only push after you have reviewed the diff and confirmed the changes.
+> This automation does NOT push for you. That decision is yours.
+```
+
+#### Step U8: Report
+
+Print a summary to the developer:
+
+```
+--update-feature complete for review {number}:
+
+  Design:    {design_doc_path}
+  Impl:      {implementation_doc_path}
+  Checkout:  {checkout_path}
+  Applied:   {N} changes ({descriptions})
+  Skipped:   {N} ({reasons if any})
+
+  Review:    cd {checkout_path} && git diff HEAD~1
+  Push:      cd {checkout_path} && git review  (YOUR DECISION)
+
+  Manifest:  {checkout_path}/FEATURE_MANIFEST.md
+  Tracker:   Updated with Feature Updates section
 ```
 
 ---

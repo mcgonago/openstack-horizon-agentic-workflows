@@ -32,14 +32,26 @@
 
 **Latest ask:** Radomir accepts the status check is needed but now specifically objects to the **owner check** (`image.owner != request.user.tenant_id`) as it overrides RBAC policy flexibility.
 
+### Owen's Detailed Response (PS6, 15:38 UTC Jul 16)
+
+Owen posted a comprehensive response citing:
+- Admin panel overrides (`AdminDeleteImage`/`AdminEditImage` return `True` without owner checks)
+- Existing convention: all image actions (`DeleteImage`, `EditImage`, `UpdateMetadata`) have the same owner check
+- Admin panel lacks Deactivate/Reactivate actions entirely
+- `PolicyTargetMixin` as the proper architectural follow-up
+- Offered to explore adopting `PolicyTargetMixin` for image actions as a follow-up
+
+**Current state:** Ball is in Radomir's court. Waiting for his decision.
+
 ### What Changed
 
-The conversation has evolved through three phases:
+The conversation has evolved through four phases:
 1. "Add RBAC" (original) -- resolved: `policy_rules` already exists
 2. "Is `allowed()` redundant?" (self-correction) -- resolved: status check is needed
-3. **"The owner check is harmful"** (latest) -- this is the current question
+3. "The owner check is harmful" (follow-up) -- Owen responded with evidence
+4. **Waiting for Radomir's decision** (current) -- Owen's response is posted, no reply yet
 
-**The analysis below addresses the latest question: whether the hardcoded owner check in `allowed()` overrides RBAC policy and should be removed.**
+**The analysis below addresses Radomir's owner check concern. Owen has since responded on Gerrit using this analysis.**
 
 ---
 
