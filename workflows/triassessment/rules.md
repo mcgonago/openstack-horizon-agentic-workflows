@@ -65,3 +65,37 @@ When the assessment references a knowledge base, cite the source:
 - "(from knowledge/horizon.md)"
 
 This ensures the recommendation is traceable and auditable.
+
+## 5. CODE BLOCK SOURCE LINKS (Non-negotiable)
+
+Every code block showing actual repository code MUST include a clickable
+GitHub/GitLab source link immediately before the code fence.
+
+**Hard rule:** When showing code from a file, PR, or commit, add a **Source:**
+line with a clickable markdown link to the exact file/PR/commit before the
+code fence. This applies to:
+
+- Makefiles, scripts, config files from repos
+- Code snippets from PRs or commits
+- YAML/JSON configs from CRDs or samples
+- Any code that exists in a git repository
+
+**Format:**
+```
+**Source:** [repo/path/file.ext](https://github.com/org/repo/blob/commit-or-branch/path/file.ext#L10-L20)
+```makefile
+PASSWORD ?=
+...
+```
+
+**Why:** Artifacts are read on dashboards where visitors need to verify the
+code, see full context, or check for updates. A bare code block with no source
+forces the reader to search the codebase manually. Source links make artifacts
+immediately actionable.
+
+**Enforcement:** Before writing any artifact, scan for code blocks and verify
+each has a source link. If a code block shows repository code without a source
+link, add it before proceeding.
+
+**Exceptions:** Pseudo-code, examples, or illustrative snippets that don't
+represent actual repository code don't need source links.
