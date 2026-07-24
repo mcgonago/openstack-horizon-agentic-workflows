@@ -125,3 +125,57 @@ The triassessment skill must detect the inquiry type and generate appropriate ar
 **Why:** Mixing artifact types creates confusion. In TRIASSESSMENT-GH-openstack-k8s-operators-install_yamls-1158, the skill generated `related_tickets.md` with OSPRH-31345 (Angular.js Key Pairs epic) for a GitHub PR inquiry about password authentication - completely unrelated content that misleads readers.
 
 **Enforcement:** At Step 0 (Parse Input), detect inquiry type and set artifact flags. Before Step 6 (Write Artifacts), verify artifact content matches inquiry type.
+
+## 7. NO EMOJI CODES IN ARTIFACTS (Non-negotiable)
+
+Emoji codes like `:thinking_face:`, `:smile:`, `:+1:`, etc. MUST be stripped from all generated artifacts before publishing.
+
+**Why:** Emoji codes are markdown shortcuts that render as literal text in many markdown viewers, including the ioshaworkflow dashboard. They make artifacts look unprofessional and are unacceptable for stakeholder-facing reports.
+
+**Enforcement:**
+1. **Extraction Phase:** When extracting content from inquiry sources (Slack, GitHub comments, email), strip all emoji codes matching pattern `:[a-z_]+:`
+2. **Generation Phase:** Never generate emoji codes in assessment text
+3. **Post-processing:** Before writing artifacts, run regex replacement to remove any remaining emoji codes
+
+**Example Cleanup:**
+```
+Before: "Hmmmm and there was also merged PR #1158 :thinking_face::smile:."
+After: "Hmmmm and there was also merged PR #1158."
+```
+
+## 8. DESCRIPTIVE LINKS FOR LONG URLS (Non-negotiable)
+
+Long, cryptic URLs MUST be converted to descriptive clickable links.
+
+**Threshold:** URLs longer than 80 characters should be converted to `[descriptive text](url)` format.
+
+**Why:** Long URLs (especially Zuul logs, CI artifacts, GitHub file permalinks) are visually cluttered and hard to scan. Descriptive link text improves readability and makes artifacts shareable with stakeholders.
+
+**Enforcement:**
+1. **URL Detection:** Identify bare URLs > 80 chars in artifact content
+2. **Context Extraction:** Determine what the link points to (Zuul log, GitHub file, CI artifact, etc.)
+3. **Descriptive Text:** Generate concise descriptive text that identifies:
+   - **What:** Type of resource (test log, PR file, commit diff, etc.)
+   - **Where:** Repository or system (Zuul, GitHub, etc.)
+   - **Context:** Relevant identifier (test name, file name, etc.)
+
+**Examples:**
+
+```
+Before: https://sf.apps.int.gpc.ocp-hub.prod.psi.redhat.com/logs/ac8/components-integration/ac832f9aca7d40ff8d271d5bcf6c3418/controller/ci-framework-data/tests/test_operator/horizon/ui_integration_test_results.html.gz?sort=result
+
+After: [Zuul CI log (ui_integration_test_results)](https://sf.apps.int.gpc.ocp-hub.prod.psi.redhat.com/logs/ac8/components-integration/ac832f9aca7d40ff8d271d5bcf6c3418/controller/ci-framework-data/tests/test_operator/horizon/ui_integration_test_results.html.gz?sort=result)
+```
+
+```
+Before: https://github.com/openstack-k8s-operators/horizon-operator/commit/427781ab94fc381b57ad4689e48ed6a171e528e0
+
+After: [this change](https://github.com/openstack-k8s-operators/horizon-operator/commit/427781ab94fc381b57ad4689e48ed6a171e528e0)
+OR
+[horizon-operator commit 427781ab](https://github.com/openstack-k8s-operators/horizon-operator/commit/427781ab94fc381b57ad4689e48ed6a171e528e0)
+```
+
+**Exceptions:**
+- Short URLs (< 80 chars) can remain bare if context is clear
+- Table cells where column header identifies resource type
+- Reference sections where URL structure itself provides value
