@@ -99,3 +99,29 @@ link, add it before proceeding.
 
 **Exceptions:** Pseudo-code, examples, or illustrative snippets that don't
 represent actual repository code don't need source links.
+
+## 6. INQUIRY TYPE DETECTION (Non-negotiable)
+
+The triassessment skill must detect the inquiry type and generate appropriate artifacts.
+
+**Inquiry Types:**
+
+1. **Jira Ticket** - Input starts with `OSPRH-`, `RHOSSTRAT-`, etc.
+   - Generate: `triage_assessment.md`, `related_tickets.md`
+   - Fetch: Jira ticket hierarchy, blocking chains, cross-team dependencies
+
+2. **GitHub PR** - Input is a GitHub PR URL or PR number with repo context
+   - Generate: `triage_assessment.md`, `related_artifacts.md`, `github_pr_analysis.md`
+   - Fetch: PR details, related PRs, commits, dependency chains
+   - **DO NOT** generate `related_tickets.md` unless Jira tickets are explicitly linked in PR description
+
+3. **Free-form Inquiry** - Natural language description or link to external resources
+   - Generate: `triage_assessment.md`, context-appropriate analysis artifacts
+   - Parse: Extract all referenced tickets, PRs, commits
+   - Generate: `related_tickets.md` only if Jira tickets found, `related_artifacts.md` only if PRs/commits found
+
+**Hard rule:** Never mix artifact types. If the inquiry is about GitHub PRs with no Jira tickets mentioned, do NOT generate `related_tickets.md`. If the inquiry is about a Jira ticket with no PRs mentioned, do NOT generate `related_artifacts.md`.
+
+**Why:** Mixing artifact types creates confusion. In TRIASSESSMENT-GH-openstack-k8s-operators-install_yamls-1158, the skill generated `related_tickets.md` with OSPRH-31345 (Angular.js Key Pairs epic) for a GitHub PR inquiry about password authentication - completely unrelated content that misleads readers.
+
+**Enforcement:** At Step 0 (Parse Input), detect inquiry type and set artifact flags. Before Step 6 (Write Artifacts), verify artifact content matches inquiry type.
