@@ -1,4 +1,4 @@
-# Manual Testing Guide — Images Panel: Activate/Deactivate Row Actions
+# Manual Testing Guide — Images Panel: Server-Side Filter Action
 
 **Review:** [https://review.opendev.org/c/openstack/horizon/+/{{REVIEW_NUMBER}}](https://review.opendev.org/c/openstack/horizon/+/{{REVIEW_NUMBER}})
 **Subject:** {{TITLE}}
@@ -48,42 +48,55 @@ port-forward in Terminal 1.
 
 **Step 3 — Create test data on the VM (Terminal 2, one-time):**
 
-This is the only step that requires SSH into the DevStack VM. The test image
-must have actual data uploaded (not just metadata) so Glance marks it as
-"active" — the activate/deactivate actions only work on active images.
+This is the only step that requires SSH into the DevStack VM. We need multiple
+images with different attributes to exercise the filter functionality.
 
 ```bash
 virtctl ssh ubuntu@vm/omcgonag-horizon-devstack -n rhos-dfg-ui--runtime-int --identity-file ~/.ssh/id_ed25519
 
 # On the VM:
 source ~/devstack/openrc admin demo
-openstack image show verify-seed-image 2>/dev/null && openstack image delete verify-seed-image 2>/dev/null || true
+
+# Create temp files for upload
 dd if=/dev/zero of=/tmp/tiny.img bs=1 count=1
+qemu-img create -f qcow2 /tmp/tiny.qcow2 1M
+
+# Clean up any existing test images
+for img in verify-seed-image verify-filter-qcow2 verify-filter-raw2; do
+  openstack image set --unprotect "$img" 2>/dev/null
+  openstack image set --activate "$img" 2>/dev/null
+  openstack image delete "$img" 2>/dev/null
+done
+
+# Create 3 images with different formats
 openstack image create --disk-format raw --container-format bare --file /tmp/tiny.img verify-seed-image
-rm -f /tmp/tiny.img
+openstack image create --disk-format qcow2 --container-format bare --file /tmp/tiny.qcow2 verify-filter-qcow2
+openstack image create --disk-format raw --container-format bare --file /tmp/tiny.img verify-filter-raw2
 
-# Verify it's active
-openstack image show verify-seed-image -f value -c status
-# Expected: active
+# Deactivate one for status filter testing
+openstack image set --deactivate verify-filter-raw2
 
-openstack image list | grep verify-seed
+# Verify
+openstack image list --long -c Name -c Status -c "Disk Format" | grep verify
+# Expected:
+# | verify-seed-image    | active      | raw   |
+# | verify-filter-qcow2  | active      | qcow2 |
+# | verify-filter-raw2   | deactivated | raw   |
+
+rm -f /tmp/tiny.img /tmp/tiny.qcow2
 exit
 ```
-
-> **Important:** Do NOT use `--file /dev/null` — Glance returns HTTP 415
-> (Unsupported Media Type) for empty uploads. The 1-byte file trick creates a
-> valid active image.
 
 **Step 4 — Clone and patch Horizon locally (Terminal 2):**
 
 ```bash
 git clone https://opendev.org/openstack/horizon.git horizon-review-{{REVIEW_NUMBER}}
 cd horizon-review-{{REVIEW_NUMBER}}
-git fetch https://review.opendev.org/openstack/horizon refs/changes/58/{{REVIEW_NUMBER}}/latest
+git fetch https://review.opendev.org/openstack/horizon refs/changes/78/{{REVIEW_NUMBER}}/latest
 git checkout FETCH_HEAD
 ```
 
-> Replace `refs/changes/58/{{REVIEW_NUMBER}}/latest` with the actual patchset
+> Replace `refs/changes/78/{{REVIEW_NUMBER}}/latest` with the actual patchset
 > ref from Gerrit (visible in the Download dropdown on the review page).
 
 **Step 5 — Create local_settings.py (Terminal 2):**
@@ -129,10 +142,6 @@ Wait for the Django development server to start. You should see:
 Starting development server at http://0.0.0.0:9000/
 ```
 
-> **Tip:** When you change code or `local_settings.py`, Django auto-reloads.
-> For settings changes that require a full restart, press `Ctrl+C` and re-run
-> the `tox` command.
-
 **Step 7 — Open the browser:**
 
 1. Open `http://localhost:9000`
@@ -172,7 +181,7 @@ virtctl ssh ubuntu@vm/omcgonag-horizon-devstack -n rhos-dfg-ui--runtime-int --id
 
 # On the VM:
 cd /opt/stack/horizon
-git fetch https://review.opendev.org/openstack/horizon refs/changes/58/{{REVIEW_NUMBER}}/latest
+git fetch https://review.opendev.org/openstack/horizon refs/changes/78/{{REVIEW_NUMBER}}/latest
 git checkout FETCH_HEAD
 sudo systemctl restart apache2
 ```
@@ -189,16 +198,7 @@ After changing, restart Apache: `sudo systemctl restart apache2`.
 
 **Create test data on the VM:**
 
-```bash
-source ~/devstack/openrc admin demo
-openstack image show verify-seed-image 2>/dev/null && openstack image delete verify-seed-image 2>/dev/null || true
-dd if=/dev/zero of=/tmp/tiny.img bs=1 count=1
-openstack image create --disk-format raw --container-format bare --file /tmp/tiny.img verify-seed-image
-rm -f /tmp/tiny.img
-openstack image show verify-seed-image -f value -c status
-# Expected: active
-exit
-```
+Follow Step 3 from Option A above (the same seed image commands).
 
 **Browser:**
 
@@ -219,9 +219,8 @@ exit
 > The GUI steps below say "Navigate to **Project > Compute > Images**" — use
 > whichever URL matches your chosen option.
 >
-> **CLI commands** (e.g., `openstack image set --protected`) require SSH into
-> the DevStack VM regardless of which option you chose. For Option A, open an
-> SSH session in a spare terminal when needed.
+> **CLI commands** (e.g., `openstack image list`) require SSH into the DevStack
+> VM regardless of which option you chose.
 
 ---
 
@@ -230,7 +229,7 @@ exit
 ### Test 1: Page Loads Correctly
 
 **Group:** A — Panel Loading
-**Automated by:** `recipes/images/panel_loading.py` > `test_page_loads`
+**Automated by:** `recipes/images-filter/panel_loading.py` > `test_page_loads`
 **Screenshot:** `after_001_panel_loaded.png`
 
 #### GUI Steps
@@ -257,7 +256,7 @@ openstack image list
 ### Test 2: Breadcrumb Visible
 
 **Group:** A — Panel Loading
-**Automated by:** `recipes/images/panel_loading.py` > `test_breadcrumb_visible`
+**Automated by:** `recipes/images-filter/panel_loading.py` > `test_breadcrumb_visible`
 
 #### GUI Steps
 
@@ -274,7 +273,7 @@ openstack image list
 ### Test 3: Table Visible
 
 **Group:** A — Panel Loading
-**Automated by:** `recipes/images/panel_loading.py` > `test_table_visible`
+**Automated by:** `recipes/images-filter/panel_loading.py` > `test_table_visible`
 **Screenshot:** `after_002_table_visible.png`
 
 #### GUI Steps
@@ -291,7 +290,7 @@ openstack image list
 ### Test 4: Panel Type Detection (Python vs Angular)
 
 **Group:** A — Panel Loading
-**Automated by:** `recipes/images/panel_loading.py` > `test_angular_or_python_detected`
+**Automated by:** `recipes/images-filter/panel_loading.py` > `test_angular_or_python_detected`
 
 #### GUI Steps
 
@@ -312,26 +311,30 @@ openstack image list
 ### Test 5: Search/Filter
 
 **Group:** B — Table Features
-**Automated by:** `recipes/images/table_features.py` > `test_search_filter`
+**Automated by:** `recipes/images-filter/table_features.py` > `test_search_filter`
 **Screenshot:** `after_003_search_filter.png`
 
 #### GUI Steps
 
 1. Navigate to **Project > Compute > Images**
-2. Locate the search/filter input field above the table
-3. Type `verify-seed` in the search box
-4. Wait 1-2 seconds for the table to filter
+2. Locate the filter area above the table — you should see:
+   - A **dropdown** for selecting the filter field (Image Name, Status, Disk Format)
+   - A **text input** for entering the filter value
+   - A **"Filter"** button
+3. Select **"Image Name ="** from the dropdown
+4. Type `verify-seed` in the text input
+5. Click **Filter** (or press Enter)
 
 #### Expected Result
 
-- [ ] Search input is present and functional
+- [ ] Filter area is present with dropdown + text input + button
 - [ ] Table filters to show only images matching "verify-seed"
-- [ ] Clearing the search restores the full list
+- [ ] The old tab-based filter (Project / Public) is NOT visible
 
 ### Test 6: Column Headers
 
 **Group:** B — Table Features
-**Automated by:** `recipes/images/table_features.py` > `test_column_headers`
+**Automated by:** `recipes/images-filter/table_features.py` > `test_column_headers`
 
 #### GUI Steps
 
@@ -347,7 +350,7 @@ openstack image list
 ### Test 7: Row Actions Menu
 
 **Group:** B — Table Features
-**Automated by:** `recipes/images/table_features.py` > `test_row_actions_menu`
+**Automated by:** `recipes/images-filter/table_features.py` > `test_row_actions_menu`
 
 #### GUI Steps
 
@@ -359,13 +362,13 @@ openstack image list
 #### Expected Result
 
 - [ ] Actions column is present for each row
-- [ ] Dropdown reveals multiple actions including: Launch, Create Volume, Edit Image, Update Metadata, **Deactivate Image**, Delete Image
+- [ ] Dropdown reveals actions including: Launch, Create Volume, Edit Image, Update Metadata, Delete Image
 - [ ] Actions are contextual (different images may show different actions)
 
 ### Test 8: Batch Actions (Select-All)
 
 **Group:** B — Table Features
-**Automated by:** `recipes/images/table_features.py` > `test_batch_actions`
+**Automated by:** `recipes/images-filter/table_features.py` > `test_batch_actions`
 
 #### GUI Steps
 
@@ -381,192 +384,155 @@ openstack image list
 
 ---
 
-## Group C: Activate / Deactivate Actions
+## Group C: Filter Action
 
 > These tests verify the core new functionality added by review {{REVIEW_NUMBER}}.
-> They test the `DeactivateImage` and `ReactivateImage` `BatchAction` subclasses.
+> They test the `ImageFilterAction` class which replaces the old tab-based
+> `OwnerFilter` with a server-side search dropdown supporting name, status,
+> and disk_format filters.
 >
-> **CLI commands below require SSH into the DevStack VM.** If using Option A,
-> open a terminal and run:
-> ```bash
-> virtctl ssh ubuntu@vm/omcgonag-horizon-devstack -n rhos-dfg-ui--runtime-int --identity-file ~/.ssh/id_ed25519
-> source ~/devstack/openrc admin demo
-> ```
+> **Test data required:** Three images with different attributes (see Prerequisites).
 
-### Test 9: Deactivate Action Visible on Active Owned Image
+### Test 9: Filter Dropdown Visible
 
-**Group:** C — Activate / Deactivate Actions
-**Automated by:** `recipes/images/activate_deactivate.py` > `test_deactivate_action_visible_on_active_owned`
-**Screenshot:** `after_004_deactivate_action_visible.png`
+**Group:** C — Filter Action
+**Automated by:** `recipes/images-filter/filter_actions.py` > `test_filter_dropdown_visible`
+**Screenshot:** `after_004_filter_dropdown_visible.png`
 
 #### GUI Steps
 
 1. Navigate to **Project > Compute > Images**
-2. Find the `verify-seed-image` row (status should be "Active")
-3. Click the dropdown arrow in the actions column
-4. Look for **"Deactivate Image"** in the dropdown menu
-
-#### CLI Equivalent
-
-```bash
-openstack image show verify-seed-image -f value -c status -c owner
-```
-
-> The `allowed()` method checks: `image.status == "active"` and `image.owner == request.user.tenant_id` and `not image.protected`.
+2. Look above the table for the filter area
+3. Verify three UI elements are present:
+   - A **dropdown** with options: "Image Name =", "Status =", "Disk Format ="
+   - A **text input** field
+   - A **"Filter"** submit button
 
 #### Expected Result
 
-- [ ] "Deactivate Image" action is visible in the row dropdown
-- [ ] Image status is "Active"
-- [ ] Image is owned by the current project (admin)
+- [ ] Filter dropdown (themable-select) is visible
+- [ ] Text input field is visible
+- [ ] "Filter" button is visible
+- [ ] Dropdown contains the three expected filter choices
 
-### Test 10: Deactivate Action Hidden on Non-Owned Images
+### Test 10: OwnerFilter Tabs Gone
 
-**Group:** C — Activate / Deactivate Actions
-**Automated by:** `recipes/images/activate_deactivate.py` > `test_deactivate_action_hidden_on_not_owned`
+**Group:** C — Filter Action
+**Automated by:** `recipes/images-filter/filter_actions.py` > `test_owner_filter_tabs_gone`
+**Screenshot:** `after_005_owner_filter_tabs_gone.png`
 
 #### GUI Steps
 
 1. Navigate to **Project > Compute > Images**
-2. Find any image row NOT owned by your project (e.g., shared community images)
-3. Click the dropdown arrow in the actions column
-4. Confirm "Deactivate Image" is **NOT** listed
-
-#### CLI Equivalent
-
-```bash
-openstack image list --long | grep -v "$(openstack project show admin -f value -c id)"
-```
+2. Look for the old tab-based filter buttons that said **"Project"**, **"Public"**, **"Shared with Me"**
+3. Confirm they are **NOT** present
 
 #### Expected Result
 
-- [ ] "Deactivate Image" does NOT appear for images not owned by your project
-- [ ] Other standard actions (Launch, Create Volume) may still appear
+- [ ] No "Project" / "Public" / "Shared with Me" filter tabs/buttons
+- [ ] No `div.table_filter.btn-group` element in the page
+- [ ] The new dropdown filter (Test 9) has replaced the tabs entirely
 
-### Test 11: Execute Deactivate
+### Test 11: Filter by Name
 
-**Group:** C — Activate / Deactivate Actions
-**Automated by:** `recipes/images/activate_deactivate.py` > `test_execute_deactivate`
-**Screenshot:** `after_005_after_deactivate.png`
+**Group:** C — Filter Action
+**Automated by:** `recipes/images-filter/filter_actions.py` > `test_filter_by_name`
+**Screenshot:** `after_006_filter_by_name.png`
 
 #### GUI Steps
 
 1. Navigate to **Project > Compute > Images**
-2. Find the `verify-seed-image` row (status: "Active")
-3. Click the dropdown arrow > **"Deactivate Image"**
-4. A confirmation dialog appears — click **OK** to confirm
-5. Wait for the page to refresh (3-5 seconds)
-6. Observe the image status has changed
+2. Select **"Image Name ="** from the filter dropdown
+3. Type `verify-seed-image` in the text input
+4. Click **Filter**
+5. Observe the table results
 
 #### CLI Equivalent
 
 ```bash
-openstack image deactivate verify-seed-image
-openstack image show verify-seed-image -f value -c status
+openstack image list --name verify-seed-image
 ```
 
-> Expected status: `deactivated`
+> The filter sends `?name=verify-seed-image` to the Glance API via
+> `get_filters()` in `views.py`.
 
 #### Expected Result
 
-- [ ] Confirmation dialog appears after clicking Deactivate
-- [ ] After confirming, a success message appears (green banner)
-- [ ] Image status changes from "Active" to **"Deactivated"**
-- [ ] Page does not show errors
+- [ ] Table shows only `verify-seed-image` (the name-matched image)
+- [ ] `verify-filter-qcow2` and `verify-filter-raw2` are NOT visible
+- [ ] The filter is server-side (not just client-side text hiding)
 
-### Test 12: Reactivate Action Visible on Deactivated Image
+### Test 12: Filter by Status
 
-**Group:** C — Activate / Deactivate Actions
-**Automated by:** `recipes/images/activate_deactivate.py` > `test_reactivate_action_visible_on_deactivated`
-**Screenshot:** `after_006_reactivate_action_visible.png`
+**Group:** C — Filter Action
+**Automated by:** `recipes/images-filter/filter_actions.py` > `test_filter_by_status`
+**Screenshot:** `after_007_filter_by_status.png`
 
 #### GUI Steps
 
-1. Navigate to **Project > Compute > Images**
-2. Find the `verify-seed-image` row (status should now be "Deactivated" from Test 11)
-3. Click the dropdown arrow in the actions column
-4. Look for **"Reactivate Image"** in the dropdown menu
-5. Confirm **"Deactivate Image"** is NOT in the dropdown (mutual exclusion)
+1. Navigate to **Project > Compute > Images** (clear any previous filter first)
+2. Select **"Status ="** from the filter dropdown
+3. Type `active` in the text input
+4. Click **Filter**
+5. Observe the table results
 
 #### CLI Equivalent
 
 ```bash
-openstack image show verify-seed-image -f value -c status
+openstack image list --status active
 ```
-
-> Expected: `deactivated`. When deactivated, the `allowed()` method on `ReactivateImage` returns `True` (checks `image.status == "deactivated"`), while `DeactivateImage.allowed()` returns `False`.
 
 #### Expected Result
 
-- [ ] "Reactivate Image" action IS visible
-- [ ] "Deactivate Image" action is NOT visible (image is already deactivated)
-- [ ] Image status shows "Deactivated"
+- [ ] Table shows only active images (`verify-seed-image`, `verify-filter-qcow2`)
+- [ ] `verify-filter-raw2` (deactivated) is NOT visible
+- [ ] Filter correctly applies server-side status filtering
 
-### Test 13: Execute Reactivate
+### Test 13: Filter by Disk Format
 
-**Group:** C — Activate / Deactivate Actions
-**Automated by:** `recipes/images/activate_deactivate.py` > `test_execute_reactivate`
-**Screenshot:** `after_007_after_reactivate.png`
+**Group:** C — Filter Action
+**Automated by:** `recipes/images-filter/filter_actions.py` > `test_filter_by_disk_format`
+**Screenshot:** `after_008_filter_by_disk_format.png`
 
 #### GUI Steps
 
-1. Navigate to **Project > Compute > Images**
-2. Find the `verify-seed-image` row (status: "Deactivated")
-3. Click the dropdown arrow > **"Reactivate Image"**
-4. A confirmation dialog appears — click **OK** to confirm
-5. Wait for the page to refresh (3-5 seconds)
-6. Observe the image status has changed back
+1. Navigate to **Project > Compute > Images** (clear any previous filter first)
+2. Select **"Disk Format ="** from the filter dropdown
+3. Type `raw` in the text input
+4. Click **Filter**
+5. Observe the table results
 
 #### CLI Equivalent
 
 ```bash
-openstack image reactivate verify-seed-image
-openstack image show verify-seed-image -f value -c status
+openstack image list --property disk_format=raw
 ```
-
-> Expected status: `active`
 
 #### Expected Result
 
-- [ ] Confirmation dialog appears after clicking Reactivate
-- [ ] After confirming, a success message appears (green banner)
-- [ ] Image status changes from "Deactivated" back to **"Active"**
-- [ ] Page does not show errors
+- [ ] Table shows only raw-format images (`verify-seed-image`, `verify-filter-raw2`)
+- [ ] `verify-filter-qcow2` (qcow2 format) is NOT visible
+- [ ] Filter correctly passes `disk_format=raw` to the Glance API
 
-### Test 14: Protected Image Does Not Show Deactivate
+### Test 14: Clear Filter Restores All Images
 
-**Group:** C — Activate / Deactivate Actions
-**Automated by:** `recipes/images/activate_deactivate.py` > `test_protected_image_no_deactivate`
+**Group:** C — Filter Action
+**Automated by:** `recipes/images-filter/filter_actions.py` > `test_clear_filter_restores_all`
+**Screenshot:** `after_009_clear_filter_restores_all.png`
 
 #### GUI Steps
 
-1. First, protect the image via CLI (SSH into DevStack VM):
-   ```bash
-   openstack image set --protected verify-seed-image
-   ```
-2. Navigate to **Project > Compute > Images**
-3. Find the `verify-seed-image` row (now protected)
-4. Click the dropdown arrow in the actions column
-5. Confirm "Deactivate Image" is **NOT** listed
-
-#### CLI Equivalent
-
-```bash
-openstack image show verify-seed-image -f value -c protected
-```
-
-> Expected: `True`. The `allowed()` method on `DeactivateImage` returns `False` when `image.protected` is `True`.
+1. Apply any filter (e.g., filter by name = `verify-seed-image`)
+2. Verify the table is filtered (fewer rows)
+3. Clear the text input field (delete all text)
+4. Click **Filter** (or press Enter)
+5. Observe the table results
 
 #### Expected Result
 
-- [ ] "Deactivate Image" does NOT appear for protected images
-- [ ] Other actions may still appear (Edit Image, etc.)
-
-#### Cleanup
-
-```bash
-openstack image set --unprotect verify-seed-image
-```
+- [ ] Table restores to showing all images (same as before filtering)
+- [ ] All three test images are visible again
+- [ ] No residual filter state
 
 ---
 
@@ -582,6 +548,9 @@ source ~/devstack/openrc admin demo
 openstack image set --unprotect verify-seed-image 2>/dev/null || true
 openstack image set --activate verify-seed-image 2>/dev/null || true
 openstack image delete verify-seed-image 2>/dev/null || true
+openstack image delete verify-filter-qcow2 2>/dev/null || true
+openstack image set --activate verify-filter-raw2 2>/dev/null || true
+openstack image delete verify-filter-raw2 2>/dev/null || true
 exit
 ```
 
@@ -606,9 +575,9 @@ rm -rf horizon-review-{{REVIEW_NUMBER}}
 | 6 | Column headers | B | [ ] |
 | 7 | Row actions menu | B | [ ] |
 | 8 | Batch actions | B | [ ] |
-| 9 | Deactivate visible on active owned | C | [ ] |
-| 10 | Deactivate hidden on non-owned | C | [ ] |
-| 11 | Execute deactivate | C | [ ] |
-| 12 | Reactivate visible on deactivated | C | [ ] |
-| 13 | Execute reactivate | C | [ ] |
-| 14 | Protected image no deactivate | C | [ ] |
+| 9 | Filter dropdown visible | C | [ ] |
+| 10 | OwnerFilter tabs gone | C | [ ] |
+| 11 | Filter by name | C | [ ] |
+| 12 | Filter by status | C | [ ] |
+| 13 | Filter by disk format | C | [ ] |
+| 14 | Clear filter restores all | C | [ ] |

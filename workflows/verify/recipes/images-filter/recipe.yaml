@@ -1,0 +1,75 @@
+name: images-filter
+label: Images Panel — Server-Side Filter Action
+description: >
+  Verify the new ImageFilterAction that replaces the tab-based OwnerFilter
+  with a server-side search dropdown (name, status, disk_format) in the
+  project Images table. Part of the de-angularize initiative.
+
+match_files:
+  - openstack_dashboard/dashboards/project/images/
+
+environment:
+  devstack_host: "${DEVSTACK_HOST}"
+  admin_user: admin
+  admin_password: "${DEVSTACK_PASSWORD}"
+  horizon_port: 8080
+  virtctl:
+    enabled: false
+    vm: omcgonag-horizon-devstack
+    namespace: rhos-dfg-ui--runtime-int
+    identity_file: "~/.ssh/id_ed25519"
+    ssh_user: ubuntu
+    openrc: "~/devstack/openrc admin demo"
+
+angular_features:
+  images_panel: false
+
+setup:
+  - "openstack image show verify-seed-image 2>/dev/null && openstack image set --unprotect verify-seed-image 2>/dev/null && openstack image delete verify-seed-image 2>/dev/null || true"
+  - "openstack image show verify-filter-qcow2 2>/dev/null && openstack image delete verify-filter-qcow2 2>/dev/null || true"
+  - "openstack image show verify-filter-raw2 2>/dev/null && openstack image set --activate verify-filter-raw2 2>/dev/null && openstack image delete verify-filter-raw2 2>/dev/null || true"
+  - "dd if=/dev/zero of=/tmp/tiny.img bs=1 count=1 2>/dev/null"
+  - "qemu-img create -f qcow2 /tmp/tiny.qcow2 1M 2>/dev/null"
+  - "openstack image create --disk-format raw --container-format bare --file /tmp/tiny.img verify-seed-image"
+  - "openstack image create --disk-format qcow2 --container-format bare --file /tmp/tiny.qcow2 verify-filter-qcow2"
+  - "openstack image create --disk-format raw --container-format bare --file /tmp/tiny.img verify-filter-raw2"
+  - "openstack image set --deactivate verify-filter-raw2"
+  - "rm -f /tmp/tiny.img /tmp/tiny.qcow2"
+
+cleanup:
+  - "openstack image set --unprotect verify-seed-image 2>/dev/null || true"
+  - "openstack image set --activate verify-seed-image 2>/dev/null || true"
+  - "openstack image delete verify-seed-image 2>/dev/null || true"
+  - "openstack image delete verify-filter-qcow2 2>/dev/null || true"
+  - "openstack image set --activate verify-filter-raw2 2>/dev/null || true"
+  - "openstack image delete verify-filter-raw2 2>/dev/null || true"
+
+groups:
+  - name: A
+    label: Panel Loading
+    module: panel_loading
+    tests:
+      - page_loads
+      - breadcrumb_visible
+      - table_visible
+      - angular_or_python_detected
+
+  - name: B
+    label: Table Features
+    module: table_features
+    tests:
+      - search_filter
+      - column_headers
+      - row_actions_menu
+      - batch_actions
+
+  - name: C
+    label: Filter Action
+    module: filter_actions
+    tests:
+      - filter_dropdown_visible
+      - owner_filter_tabs_gone
+      - filter_by_name
+      - filter_by_status
+      - filter_by_disk_format
+      - clear_filter_restores_all

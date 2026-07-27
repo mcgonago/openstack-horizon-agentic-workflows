@@ -3,6 +3,9 @@ artifacts/
 # But keep verify artifacts (source of truth for dashboard [src] links)
 !workflows/verify/artifacts/
 
+# Claude Code project-specific state (not shared across machines)
+.claude/
+
 # OS / editor noise
 .DS_Store
 *.swp

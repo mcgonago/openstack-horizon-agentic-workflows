@@ -1,0 +1,293 @@
+{
+  "created_at": "2026-07-15T16:01:23.489457+00:00",
+  "review_number": 986458,
+  "artifacts_dir": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-986458",
+  "verify_dir": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify",
+  "selected_groups": null,
+  "no_before": true,
+  "post_merge": false,
+  "recipe_override": "",
+  "devstack_override": "",
+  "started_at": "2026-07-15T16:31:03.790260+00:00",
+  "title": "Add activate/deactivate row actions to Images table",
+  "branch": "master",
+  "status": "NEW",
+  "topic": "de-angularize",
+  "owner": "Owen McGonagle",
+  "project": "openstack/horizon",
+  "patchset": 6,
+  "ref": "refs/changes/58/986458/6",
+  "files_changed": [
+    "openstack_dashboard/dashboards/project/images/images/tables.py",
+    "openstack_dashboard/dashboards/project/images/tests.py"
+  ],
+  "commit_message": "",
+  "dependencies": [],
+  "recipe": "images",
+  "recipe_groups": [
+    "A",
+    "B",
+    "C"
+  ],
+  "phase_1_status": "completed",
+  "updated_at": "2026-07-15T16:32:46.400988+00:00",
+  "devstack_host": "localhost",
+  "admin_user": "admin",
+  "admin_password": "secret",
+  "deploy_mode": "local",
+  "horizon_port": 9000,
+  "horizon_url": "http://localhost:9000",
+  "devstack_connection": {
+    "mode": "virtctl",
+    "user": "ubuntu",
+    "vm": "omcgonag-horizon-devstack",
+    "namespace": "rhos-dfg-ui--runtime-int",
+    "identity_file": "/home/omcgonag/.ssh/id_ed25519",
+    "openrc": "~/devstack/openrc admin demo"
+  },
+  "test_resources": [
+    "openstack image show verify-seed-image 2>/dev/null && openstack image set --unprotect verify-seed-image 2>/dev/null && openstack image delete verify-seed-image 2>/dev/null || true",
+    "dd if=/dev/zero of=/tmp/tiny.img bs=1 count=1 2>/dev/null",
+    "openstack image create --disk-format raw --container-format bare --file /tmp/tiny.img verify-seed-image",
+    "rm -f /tmp/tiny.img"
+  ],
+  "initial_keypair_count": 0,
+  "phase_2_status": "completed",
+  "phase_3_status": "skipped",
+  "phase_4_status": "skipped",
+  "after_commit": "21cd477ad Merge commit 'refs/changes/58/986458/6' of https://review.opendev.org/openstack/horizon into HEAD",
+  "horizon_log": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-986458/horizon-after.log",
+  "deploy_after": {
+    "commit": "21cd477ad Merge commit 'refs/changes/58/986458/6' of https://review.opendev.org/openstack/horizon into HEAD",
+    "angular_keypairs": false,
+    "url": "http://localhost:9000",
+    "ready": true,
+    "mode": "local"
+  },
+  "phase_5_status": "completed",
+  "test_results_after": [
+    {
+      "group": "A",
+      "label": "Panel Loading",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "A1_page_loads",
+          "status": "pass"
+        },
+        {
+          "name": "A2_breadcrumb_visible",
+          "status": "pass"
+        },
+        {
+          "name": "A3_table_visible",
+          "status": "pass"
+        },
+        {
+          "name": "A4_panel_type_detected",
+          "status": "pass",
+          "panel_type": "python"
+        }
+      ],
+      "counts": {
+        "pass": 4,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "B",
+      "label": "Table Features",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "B1_search_filter",
+          "status": "pass",
+          "note": "no search filter rendered (expected for Python Images panel)"
+        },
+        {
+          "name": "B2_column_headers",
+          "status": "pass",
+          "headers": [
+            "Owner",
+            "Name",
+            "Type",
+            "Status",
+            "Visibility",
+            "Protected",
+            "Disk Format",
+            "Size",
+            "Actions"
+          ]
+        },
+        {
+          "name": "B3_row_actions_menu",
+          "status": "pass"
+        },
+        {
+          "name": "B4_batch_actions",
+          "status": "pass"
+        }
+      ],
+      "counts": {
+        "pass": 4,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "C",
+      "label": "Activate / Deactivate Actions",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "C1_deactivate_visible_on_active_owned",
+          "status": "pass",
+          "actions_found": [
+            "launch",
+            "create volume",
+            "edit image",
+            "update metadata",
+            "deactivate image",
+            "delete image"
+          ]
+        },
+        {
+          "name": "C2_deactivate_hidden_on_not_owned",
+          "status": "pass",
+          "note": "checked foreign images"
+        },
+        {
+          "name": "C3_execute_deactivate",
+          "status": "pass",
+          "row_text": "\t\tdemo\tverify-seed-image\tImage\tDeactivated\tShared\tNo\tRaw\t1\u00a0byte\tReactivate Image"
+        },
+        {
+          "name": "C4_reactivate_visible_on_deactivated",
+          "status": "pass",
+          "actions_found": [
+            "reactivate image",
+            "delete image"
+          ]
+        },
+        {
+          "name": "C5_execute_reactivate",
+          "status": "pass",
+          "row_text": "\t\tdemo\tverify-seed-image\tImage\tActive\tShared\tNo\tRaw\t1\u00a0byte\tLaunch"
+        },
+        {
+          "name": "C6_protected_image_no_deactivate",
+          "status": "pass",
+          "note": "verified on protected image"
+        }
+      ],
+      "counts": {
+        "pass": 6,
+        "fail": 0,
+        "error": 0
+      }
+    }
+  ],
+  "test_summary_after": {
+    "total_groups": 3,
+    "passed_groups": 3,
+    "failed_groups": 0,
+    "total_tests": 14,
+    "passed_tests": 14,
+    "failed_tests": 0
+  },
+  "phase_6_status": "completed",
+  "verdict": "PASS",
+  "parity_matrix": [
+    {
+      "test": "A1_page_loads",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "A2_breadcrumb_visible",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "A3_table_visible",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "A4_panel_type_detected",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "B1_search_filter",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "B2_column_headers",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "B3_row_actions_menu",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "B4_batch_actions",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C1_deactivate_visible_on_active_owned",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C2_deactivate_hidden_on_not_owned",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C3_execute_deactivate",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C4_reactivate_visible_on_deactivated",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C5_execute_reactivate",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "C6_protected_image_no_deactivate",
+      "before": "skip",
+      "after": "pass",
+      "parity": "FIXED"
+    }
+  ],
+  "manual_testing_guide_path": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-986458/manual_testing_guide.md",
+  "manual_testing_guide_tests": 14,
+  "phase_7_status": "completed",
+  "total_duration_s": 102.55626678466797,
+  "completed_at": "2026-07-15T16:32:46.400983+00:00",
+  "horizon_pid": 59590
+}

@@ -1,0 +1,662 @@
+{
+  "created_at": "2026-06-23T01:39:45.492499+00:00",
+  "review_number": 992714,
+  "artifacts_dir": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-992714",
+  "verify_dir": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify",
+  "selected_groups": null,
+  "no_before": false,
+  "post_merge": false,
+  "recipe_override": "keypairs",
+  "devstack_override": "",
+  "started_at": "2026-06-24T15:04:55.399813+00:00",
+  "title": "Switch default Key Pairs panel from AngularJS to Python",
+  "branch": "master",
+  "status": "NEW",
+  "topic": "de-angularize-keypairs-default",
+  "owner": "Owen McGonagle",
+  "project": "openstack/horizon",
+  "patchset": 8,
+  "ref": "refs/changes/14/992714/8",
+  "files_changed": [
+    "releasenotes/notes/switch-keypairs-panel-default-to-python-0527d31cd859d015.yaml",
+    "doc/source/configuration/settings.rst",
+    "openstack_dashboard/dashboards/project/key_pairs/views.py",
+    "openstack_dashboard/defaults.py",
+    "openstack_dashboard/test/selenium/integration/test_keypairs.py"
+  ],
+  "commit_message": "",
+  "dependencies": [],
+  "recipe": "keypairs",
+  "recipe_groups": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G"
+  ],
+  "phase_1_status": "completed",
+  "updated_at": "2026-06-24T15:04:55.749446+00:00",
+  "devstack_host": "localhost",
+  "admin_user": "admin",
+  "admin_password": "secret",
+  "deploy_mode": "local",
+  "horizon_port": 9000,
+  "horizon_url": "http://localhost:9000",
+  "devstack_connection": {
+    "mode": "virtctl",
+    "user": "ubuntu",
+    "vm": "horizon-devstack",
+    "namespace": "rhos-dfg-ui--runtime-int",
+    "identity_file": "/home/omcgonag/.ssh/id_ed25519"
+  },
+  "test_resources": [
+    "openstack keypair delete verify-seed-key 2>/dev/null || true"
+  ],
+  "initial_keypair_count": 0,
+  "phase_2_status": "completed",
+  "before_commit": "447221f1e Imported Translations from Zanata",
+  "horizon_log": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-992714/horizon-after.log",
+  "deploy_before": {
+    "commit": "447221f1e Imported Translations from Zanata",
+    "angular_keypairs": true,
+    "url": "http://localhost:9000",
+    "ready": true,
+    "mode": "local",
+    "checkout_dir": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-992714/horizon-checkout"
+  },
+  "phase_3_status": "completed",
+  "test_results_before": [
+    {
+      "group": "A",
+      "label": "Panel Loading",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "A1_page_loads",
+          "status": "pass"
+        },
+        {
+          "name": "A2_breadcrumb_visible",
+          "status": "pass"
+        },
+        {
+          "name": "A3_table_visible",
+          "status": "pass"
+        },
+        {
+          "name": "A4_panel_type_detected",
+          "status": "pass",
+          "panel_type": "angular"
+        }
+      ],
+      "counts": {
+        "pass": 4,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "B",
+      "label": "Table Features",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "B1_search_filter",
+          "status": "pass"
+        },
+        {
+          "name": "B2_column_headers",
+          "status": "pass",
+          "headers": [
+            "Name",
+            "Type",
+            "Fingerprint"
+          ]
+        },
+        {
+          "name": "B3_row_actions_menu",
+          "status": "pass"
+        },
+        {
+          "name": "B4_batch_actions",
+          "status": "pass"
+        },
+        {
+          "name": "B5_pagination_controls",
+          "status": "pass",
+          "note": "pagination may not show with few items"
+        }
+      ],
+      "counts": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "C",
+      "label": "Create Keypair",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "C1_create_ssh_keypair",
+          "status": "pass",
+          "downloaded": true
+        },
+        {
+          "name": "C2_create_x509_keypair",
+          "status": "pass"
+        },
+        {
+          "name": "C3_keypairs_appear_in_table",
+          "status": "pass",
+          "ssh_visible": true,
+          "x509_visible": true
+        }
+      ],
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "D",
+      "label": "Import Keypair",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "D1_import_ssh_keypair",
+          "status": "pass"
+        },
+        {
+          "name": "D2_import_x509_keypair",
+          "status": "pass"
+        },
+        {
+          "name": "D3_validation_errors",
+          "status": "pass",
+          "note": "Submit disabled (Angular validation)"
+        }
+      ],
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "E",
+      "label": "Delete Keypair",
+      "status": "fail",
+      "tests": [
+        {
+          "name": "E1_delete_single",
+          "status": "pass"
+        },
+        {
+          "name": "E2_delete_batch",
+          "status": "fail",
+          "error": "Batch delete button not enabled"
+        },
+        {
+          "name": "E3_confirm_dialog",
+          "status": "pass",
+          "note": "Verified via delete tests"
+        }
+      ],
+      "counts": {
+        "pass": 2,
+        "fail": 1,
+        "error": 0
+      }
+    },
+    {
+      "group": "F",
+      "label": "Detail View",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "F1_detail_page_loads",
+          "status": "pass",
+          "keypair": "verify-create-ssh"
+        },
+        {
+          "name": "F2_detail_shows_fingerprint",
+          "status": "pass"
+        },
+        {
+          "name": "F3_detail_shows_public_key",
+          "status": "pass"
+        },
+        {
+          "name": "F4_back_navigation",
+          "status": "pass"
+        }
+      ],
+      "counts": {
+        "pass": 4,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "G",
+      "label": "Inline Expansion",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "G1_chevron_toggle",
+          "status": "pass",
+          "note": "No chevron found \u2014 panel may not support inline expand"
+        },
+        {
+          "name": "G2_expanded_content",
+          "status": "pass",
+          "has_content": false
+        },
+        {
+          "name": "G3_multiple_expand",
+          "status": "pass",
+          "note": "Fewer than 2 expandable rows"
+        }
+      ],
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "error": 0
+      }
+    }
+  ],
+  "test_summary_before": {
+    "total_groups": 7,
+    "passed_groups": 6,
+    "failed_groups": 1,
+    "total_tests": 25,
+    "passed_tests": 24,
+    "failed_tests": 1
+  },
+  "phase_4_status": "completed",
+  "after_commit": "80a5daf42 Switch default Key Pairs panel from AngularJS to Python",
+  "deploy_after": {
+    "commit": "80a5daf42 Switch default Key Pairs panel from AngularJS to Python",
+    "angular_keypairs": false,
+    "url": "http://localhost:9000",
+    "ready": true,
+    "mode": "local"
+  },
+  "phase_5_status": "completed",
+  "test_results_after": [
+    {
+      "group": "A",
+      "label": "Panel Loading",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "A1_page_loads",
+          "status": "pass"
+        },
+        {
+          "name": "A2_breadcrumb_visible",
+          "status": "pass"
+        },
+        {
+          "name": "A3_table_visible",
+          "status": "pass"
+        },
+        {
+          "name": "A4_panel_type_detected",
+          "status": "pass",
+          "panel_type": "python"
+        }
+      ],
+      "counts": {
+        "pass": 4,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "B",
+      "label": "Table Features",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "B1_search_filter",
+          "status": "pass"
+        },
+        {
+          "name": "B2_column_headers",
+          "status": "pass",
+          "headers": [
+            "Key Pair Name",
+            "Key Pair Type",
+            "Fingerprint",
+            "Actions"
+          ]
+        },
+        {
+          "name": "B3_row_actions_menu",
+          "status": "pass"
+        },
+        {
+          "name": "B4_batch_actions",
+          "status": "pass"
+        },
+        {
+          "name": "B5_pagination_controls",
+          "status": "pass",
+          "note": "pagination may not show with few items"
+        }
+      ],
+      "counts": {
+        "pass": 5,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "C",
+      "label": "Create Keypair",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "C1_create_ssh_keypair",
+          "status": "pass",
+          "downloaded": false
+        },
+        {
+          "name": "C2_create_x509_keypair",
+          "status": "pass"
+        },
+        {
+          "name": "C3_keypairs_appear_in_table",
+          "status": "pass",
+          "ssh_visible": true,
+          "x509_visible": true
+        }
+      ],
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "D",
+      "label": "Import Keypair",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "D1_import_ssh_keypair",
+          "status": "pass"
+        },
+        {
+          "name": "D2_import_x509_keypair",
+          "status": "pass"
+        },
+        {
+          "name": "D3_validation_errors",
+          "status": "pass",
+          "note": "Modal stayed open (HTML5 validation)"
+        }
+      ],
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "E",
+      "label": "Delete Keypair",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "E1_delete_single",
+          "status": "pass"
+        },
+        {
+          "name": "E2_delete_batch",
+          "status": "pass"
+        },
+        {
+          "name": "E3_confirm_dialog",
+          "status": "pass",
+          "note": "Verified via delete tests"
+        }
+      ],
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "F",
+      "label": "Detail View",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "F1_detail_page_loads",
+          "status": "pass",
+          "keypair": ""
+        },
+        {
+          "name": "F2_detail_shows_fingerprint",
+          "status": "pass"
+        },
+        {
+          "name": "F3_detail_shows_public_key",
+          "status": "pass"
+        },
+        {
+          "name": "F4_back_navigation",
+          "status": "pass"
+        }
+      ],
+      "counts": {
+        "pass": 4,
+        "fail": 0,
+        "error": 0
+      }
+    },
+    {
+      "group": "G",
+      "label": "Inline Expansion",
+      "status": "pass",
+      "tests": [
+        {
+          "name": "G1_chevron_toggle",
+          "status": "pass",
+          "note": "No chevron found \u2014 panel may not support inline expand"
+        },
+        {
+          "name": "G2_expanded_content",
+          "status": "pass",
+          "note": "No expanded row \u2014 may not be supported in this panel type"
+        },
+        {
+          "name": "G3_multiple_expand",
+          "status": "pass",
+          "note": "Fewer than 2 expandable rows"
+        }
+      ],
+      "counts": {
+        "pass": 3,
+        "fail": 0,
+        "error": 0
+      }
+    }
+  ],
+  "test_summary_after": {
+    "total_groups": 7,
+    "passed_groups": 7,
+    "failed_groups": 0,
+    "total_tests": 25,
+    "passed_tests": 25,
+    "failed_tests": 0
+  },
+  "phase_6_status": "completed",
+  "verdict": "PASS",
+  "parity_matrix": [
+    {
+      "test": "A1_page_loads",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "A2_breadcrumb_visible",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "A3_table_visible",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "A4_panel_type_detected",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "B1_search_filter",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "B2_column_headers",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "B3_row_actions_menu",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "B4_batch_actions",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "B5_pagination_controls",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "C1_create_ssh_keypair",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "C2_create_x509_keypair",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "C3_keypairs_appear_in_table",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "D1_import_ssh_keypair",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "D2_import_x509_keypair",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "D3_validation_errors",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "E1_delete_single",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "E2_delete_batch",
+      "before": "fail",
+      "after": "pass",
+      "parity": "FIXED"
+    },
+    {
+      "test": "E3_confirm_dialog",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "F1_detail_page_loads",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "F2_detail_shows_fingerprint",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "F3_detail_shows_public_key",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "F4_back_navigation",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "G1_chevron_toggle",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "G2_expanded_content",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    },
+    {
+      "test": "G3_multiple_expand",
+      "before": "pass",
+      "after": "pass",
+      "parity": "PARITY"
+    }
+  ],
+  "phase_7_status": "completed",
+  "total_duration_s": 368.94425988197327,
+  "completed_at": "2026-06-24T15:04:55.749422+00:00",
+  "horizon_pid": 85773,
+  "manual_testing_guide_path": "/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows/workflows/verify/artifacts/verify-992714/manual_testing_guide.md",
+  "manual_testing_guide_tests": 26
+}

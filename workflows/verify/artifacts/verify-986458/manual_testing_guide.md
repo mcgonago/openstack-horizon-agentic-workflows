@@ -1,9 +1,9 @@
 # Manual Testing Guide — Images Panel: Activate/Deactivate Row Actions
 
-**Review:** [https://review.opendev.org/c/openstack/horizon/+/{{REVIEW_NUMBER}}](https://review.opendev.org/c/openstack/horizon/+/{{REVIEW_NUMBER}})
-**Subject:** {{TITLE}}
-**Recipe:** {{RECIPE}}
-**Generated:** {{GENERATED_DATE}}
+**Review:** [https://review.opendev.org/c/openstack/horizon/+/986458](https://review.opendev.org/c/openstack/horizon/+/986458)
+**Subject:** Add activate/deactivate row actions to Images table
+**Recipe:** images
+**Generated:** 2026-07-15 17:24 UTC
 
 > This guide walks through every automated test as a manual, click-by-click
 > procedure. Follow each section in order, checking off items as you go.
@@ -77,13 +77,13 @@ exit
 **Step 4 — Clone and patch Horizon locally (Terminal 2):**
 
 ```bash
-git clone https://opendev.org/openstack/horizon.git horizon-review-{{REVIEW_NUMBER}}
-cd horizon-review-{{REVIEW_NUMBER}}
-git fetch https://review.opendev.org/openstack/horizon refs/changes/58/{{REVIEW_NUMBER}}/latest
+git clone https://opendev.org/openstack/horizon.git horizon-review-986458
+cd horizon-review-986458
+git fetch https://review.opendev.org/openstack/horizon refs/changes/58/986458/latest
 git checkout FETCH_HEAD
 ```
 
-> Replace `refs/changes/58/{{REVIEW_NUMBER}}/latest` with the actual patchset
+> Replace `refs/changes/58/986458/latest` with the actual patchset
 > ref from Gerrit (visible in the Download dropdown on the review page).
 
 **Step 5 — Create local_settings.py (Terminal 2):**
@@ -172,7 +172,7 @@ virtctl ssh ubuntu@vm/omcgonag-horizon-devstack -n rhos-dfg-ui--runtime-int --id
 
 # On the VM:
 cd /opt/stack/horizon
-git fetch https://review.opendev.org/openstack/horizon refs/changes/58/{{REVIEW_NUMBER}}/latest
+git fetch https://review.opendev.org/openstack/horizon refs/changes/58/986458/latest
 git checkout FETCH_HEAD
 sudo systemctl restart apache2
 ```
@@ -383,7 +383,7 @@ openstack image list
 
 ## Group C: Activate / Deactivate Actions
 
-> These tests verify the core new functionality added by review {{REVIEW_NUMBER}}.
+> These tests verify the core new functionality added by review 986458.
 > They test the `DeactivateImage` and `ReactivateImage` `BatchAction` subclasses.
 >
 > **CLI commands below require SSH into the DevStack VM.** If using Option A,
@@ -589,7 +589,7 @@ If using Option A, also stop your local Horizon server (`Ctrl+C` in Terminal 2)
 and optionally remove the checkout:
 
 ```bash
-rm -rf horizon-review-{{REVIEW_NUMBER}}
+rm -rf horizon-review-986458
 ```
 
 ---
