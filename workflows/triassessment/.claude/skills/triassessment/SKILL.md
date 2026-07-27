@@ -14,7 +14,7 @@ Supports two sources:
 
 ## Usage
 
-/triassessment <TICKET-ID> [--update-artifact-dashboard] [--deep]
+/triassessment <TICKET-ID> [--update-artifact-dashboard] [--deep] [--generate-fix]
 
 ## Examples
 
@@ -30,6 +30,9 @@ Supports two sources:
 /triassessment 2161292
 /triassessment https://bugs.launchpad.net/oslo.policy/+bug/2161292
 /triassessment LP#2161292 --deep --update-artifact-dashboard
+
+# With code fix proposals (requires --deep)
+/triassessment OSPRH-33457 --deep --generate-fix --update-artifact-dashboard
 ```
 
 ## Process
@@ -39,6 +42,7 @@ Supports two sources:
 Extract the ticket ID from the arguments. Detect flags:
 - `--update-artifact-dashboard` -> set PUBLISH=true
 - `--deep` -> set DEEP=true
+- `--generate-fix` -> set GENERATE_FIX=true (requires DEEP=true)
 
 **Source detection** -- determine where to fetch the ticket from:
 
@@ -286,6 +290,137 @@ If DEEP=true, additionally:
 - Map cross-team dependencies with contact info
 - Check if existing PRs address this ticket
 
+### Step 4.5: Generate Fix Proposals (if --generate-fix)
+
+If GENERATE_FIX=true (requires DEEP=true), analyze the ticket and generate
+concrete code change proposals.
+
+**Prerequisites check:**
+- If GENERATE_FIX=true but DEEP=false, error and suggest: `--generate-fix requires --deep`
+- Extract affected code paths from ticket description or Deep Analysis (Step 4)
+
+**For each affected file path mentioned in the ticket:**
+
+1. **Locate the repository:**
+   - Check if file path is in openstack-k8s-operators repos (horizon-operator, nova-operator, etc.)
+   - Check if file path is in openstack repos (horizon, nova, etc.)
+   - If repo is not locally available, note "Repository checkout needed" in proposal
+
+2. **Read the affected file(s):**
+   - Use grep/find to locate the file
+   - Read the relevant sections (use line numbers if provided in ticket)
+   - Read surrounding context (±20 lines) to understand structure
+
+3. **Generate fix proposal:**
+   - **Current Code** block: Show the problematic code
+   - **Proposed Change** block: Show the fixed code with inline comments explaining changes
+   - **Rationale**: Explain why this change fixes the issue
+   - **Testing Strategy**: Suggest how to verify the fix works
+   - **Migration Notes**: If the change breaks compatibility, note upgrade path
+
+4. **Write `artifacts/triassessment/proposed_fixes.md`** with structure:
+
+```markdown
+# Proposed Fixes: <TICKET-ID>
+
+**Ticket:** [<TICKET-ID>](ticket-url)
+**Generated:** <timestamp>
+**Confidence:** <LOW|MEDIUM|HIGH> based on available context
+
+## Summary
+
+<One-paragraph summary of the fix approach>
+
+## Affected Files
+
+<Table of files to be changed, with change type (modify/add/delete)>
+
+| File | Change Type | Lines | Complexity |
+|------|-------------|-------|------------|
+| path/to/file.py | Modify | ~15 | Medium |
+
+---
+
+## Fix 1: <Short description>
+
+**File:** `path/to/file.py`
+**Lines:** 123-145
+**Complexity:** Medium
+**Risk:** Low (no API changes)
+
+### Current Code
+
+```python
+# Current implementation (problematic)
+def problematic_function():
+    # ... code ...
+```
+
+### Proposed Change
+
+```python
+# Fixed implementation
+def problematic_function():
+    # FIX: Set AllowPrivilegeEscalation to false per OSPRH-33457
+    security_context = {
+        "allowPrivilegeEscalation": False,  # Changed from True
+        "runAsUser": 48,
+        "capabilities": {
+            "drop": ["ALL"]  # Changed from ["MKNOD"]
+        }
+    }
+```
+
+### Rationale
+
+<Explain why this change fixes the issue, reference ticket details>
+
+### Testing Strategy
+
+<Suggest unit tests, integration tests, manual verification steps>
+
+### Migration Notes
+
+<If breaking change: upgrade path, deprecation warnings, etc.>
+
+---
+
+## Fix 2: <Next fix>
+
+...
+
+---
+
+## Implementation Checklist
+
+- [ ] Review fix proposals with team
+- [ ] Create feature branch
+- [ ] Implement Fix 1: <description>
+- [ ] Implement Fix 2: <description>
+- [ ] Run test suite
+- [ ] Manual verification
+- [ ] Submit Gerrit review
+- [ ] Link review to <TICKET-ID>
+
+---
+
+**Disclaimer:** These proposals are AI-generated based on ticket description
+and available code context. Review carefully before implementation.
+
+Generated: <timestamp> | Skill: /triassessment --generate-fix | Model: <model-id>
+```
+
+**Confidence levels:**
+- **HIGH**: All affected files located, full context available, fix is straightforward
+- **MEDIUM**: Most files located, some assumptions made, fix requires judgment
+- **LOW**: Missing code context, fix is speculative, requires investigation
+
+**If code files cannot be located:**
+- Note which files are missing
+- Provide fix proposals based on ticket description alone
+- Set confidence to LOW
+- Suggest: "Clone <repo-url> to enable concrete fix proposals"
+
 ### Step 5: Generate Triage Assessment
 
 Write `artifacts/triassessment/triage_assessment.md` with sections:
@@ -507,6 +642,7 @@ Files written to artifacts/triassessment/:
 
 - triage_assessment.md -- Structured assessment with recommendation
 - related_tickets.md -- Related ticket hierarchy and dependencies
+- proposed_fixes.md -- (only if --generate-fix) Concrete code change proposals with diffs
 
 ## Knowledge Sources
 

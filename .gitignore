@@ -5,6 +5,10 @@ artifacts/
 
 # Claude Code project-specific state (not shared across machines)
 .claude/
+# But keep workflow-specific skills (source of truth for skill definitions)
+!workflows/*/.claude/
+!workflows/*/.claude/skills/
+!workflows/*/.claude/skills/**
 
 # OS / editor noise
 .DS_Store
