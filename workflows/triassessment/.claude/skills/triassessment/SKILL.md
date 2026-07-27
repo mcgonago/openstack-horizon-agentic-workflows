@@ -442,29 +442,64 @@ Write `artifacts/triassessment/related_tickets.md` with sections:
 
 ### Step 7: Publish to Dashboard (if --update-artifact-dashboard)
 
-If PUBLISH=true, inform the user to ingest artifacts:
+If PUBLISH=true, auto-ingest artifacts into the dashboard:
 
-```
-Artifacts written to: artifacts/triassessment/
-Case ID: <CASE_ID>
-
-To ingest into dashboard:
+Run the ingestion script:
+```bash
 cd /home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/ioshaworkflow
-python3 scripts/ingest_artifacts.py \
+python scripts/ingest_artifacts.py \
   <CASE_ID> \
   triassessment \
   triassessment \
-  --title "<ticket-summary>" \
-  --summary "Triage assessment of <TICKET-ID>" \
-  --source-project-variant openstack-horizon-agentic-workflows-triassessment
+  --skill-type triassessment \
+  --title "<ticket-summary-truncated-to-80-chars>" \
+  --summary "Triage assessment of <TICKET-ID>: <brief-context>"
 ```
 
-Case ID conventions:
+**Case ID conventions:**
 - Jira: `TRIASSESSMENT-OSPRH-27628`
 - Launchpad: `TRIASSESSMENT-LP-2161292`
 
-Or use the dashboard "Ingest Artifacts" button at:
-http://10.0.151.101:8072/investigations/<CASE_ID>
+**Title Formatting:**
+- Keep under 80 characters
+- Use format: "RCA of <component> <issue-type> (<severity>)" for security bugs
+- Use format: "<Action> <component> <brief-description>" for features/stories
+- Examples:
+  - "RCA of Horizon operator security vulnerability (CVSS 7.3)"
+  - "File decommission ticket for PSI migration"
+  - "Investigate PQC compliance for TLS certificates"
+
+**Summary Formatting:**
+- Start with "Triage assessment of <TICKET-ID>:"
+- Follow with 1-2 sentence context
+- Keep total under 200 characters
+- Examples:
+  - "Triage assessment of OSPRH-33457: Root cause analysis for horizon-operator privilege escalation path"
+  - "Triage assessment of OSPRH-28773: PSI to ITUp migration decommission tracking"
+  - "Triage assessment of LP-2161292: oslo.policy RoleName regex DoS vulnerability"
+
+**After ingestion succeeds:**
+Report the dashboard URL to the user:
+```
+✅ Artifacts published to dashboard
+View at: http://10.0.151.101:8072/investigations/<CASE_ID>?run=run-001
+```
+
+**If ingestion fails:**
+Inform the user with the error message and provide manual instructions:
+```
+❌ Auto-ingestion failed: <error-message>
+
+Manual ingestion:
+cd /home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/ioshaworkflow
+python scripts/ingest_artifacts.py \
+  <CASE_ID> \
+  triassessment \
+  triassessment \
+  --skill-type triassessment \
+  --title "<ticket-summary>" \
+  --summary "Triage assessment of <TICKET-ID>"
+```
 
 ## Output
 
