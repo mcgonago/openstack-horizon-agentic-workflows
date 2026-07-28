@@ -110,19 +110,33 @@ The triassessment skill must detect the inquiry type and generate appropriate ar
    - Generate: `triage_assessment.md`, `related_tickets.md`
    - Fetch: Jira ticket hierarchy, blocking chains, cross-team dependencies
 
-2. **GitHub PR** - Input is a GitHub PR URL or PR number with repo context
+2. **Launchpad Bug** - Input starts with `LP#`, `lp:`, or is a launchpad URL
+   - Generate: `triage_assessment.md`, `related_tickets.md` (only if related bugs found)
+   - Fetch: Bug metadata, bug tasks, messages, linked merge proposals
+
+3. **Gerrit Review** - Input is a Gerrit URL or numeric review with `--gerrit` flag
+   - Generate: `triage_assessment.md`, `related_reviews.md`
+   - Fetch: Review metadata, commit message, changed files, related reviews
+   - **DO NOT** generate `related_tickets.md` unless Jira tickets are explicitly referenced in commit message
+
+4. **Gerrit Comparison** - Input has `--compare` flag with two review IDs
+   - Generate: `triage_assessment_primary.md`, `triage_assessment_compare.md`, `comparison.md`, `related_reviews.md`
+   - Fetch: Both reviews, all related reviews for both, cross-reference
+   - **DO NOT** generate `related_tickets.md` unless Jira tickets are shared between reviews
+
+5. **GitHub PR** - Input is a GitHub PR URL or PR number with repo context
    - Generate: `triage_assessment.md`, `related_artifacts.md`, `github_pr_analysis.md`
    - Fetch: PR details, related PRs, commits, dependency chains
    - **DO NOT** generate `related_tickets.md` unless Jira tickets are explicitly linked in PR description
 
-3. **Free-form Inquiry** - Natural language description or link to external resources
+6. **Free-form Inquiry** - Natural language description or link to external resources
    - Generate: `triage_assessment.md`, context-appropriate analysis artifacts
    - Parse: Extract all referenced tickets, PRs, commits
    - Generate: `related_tickets.md` only if Jira tickets found, `related_artifacts.md` only if PRs/commits found
 
-**Hard rule:** Never mix artifact types. If the inquiry is about GitHub PRs with no Jira tickets mentioned, do NOT generate `related_tickets.md`. If the inquiry is about a Jira ticket with no PRs mentioned, do NOT generate `related_artifacts.md`.
+**Hard rule:** Never mix artifact types. If the inquiry is about Gerrit reviews with no Jira tickets mentioned in commit messages, do NOT generate `related_tickets.md`. If the inquiry is about a Jira ticket with no Gerrit reviews mentioned, do NOT generate `related_reviews.md`.
 
-**Why:** Mixing artifact types creates confusion. In TRIASSESSMENT-GH-openstack-k8s-operators-install_yamls-1158, the skill generated `related_tickets.md` with OSPRH-31345 (Angular.js Key Pairs epic) for a GitHub PR inquiry about password authentication - completely unrelated content that misleads readers.
+**Why:** Mixing artifact types creates confusion. Readers expect content relevant to the source type. Gerrit reviews should focus on code review aspects, not unrelated ticket hierarchies.
 
 **Enforcement:** At Step 0 (Parse Input), detect inquiry type and set artifact flags. Before Step 6 (Write Artifacts), verify artifact content matches inquiry type.
 
@@ -179,3 +193,84 @@ OR
 - Short URLs (< 80 chars) can remain bare if context is clear
 - Table cells where column header identifies resource type
 - Reference sections where URL structure itself provides value
+
+## 9. GERRIT VOTE INTERPRETATION (Non-negotiable for Gerrit sources)
+
+When processing Gerrit review votes (Code-Review, Verified, Workflow), use
+the human-readable status mapping from Step 2.5 in SKILL.md.
+
+**Hard rules:**
+1. **Never report raw vote JSON** - readers need status, not API responses
+2. **Apply rules in order** - most specific first (MERGED beats everything, WIP beats needs-revision, etc.)
+3. **Include vote counts** - "Code-Review: +2 (×2), +1 (×1)" not just "+2"
+4. **Distinguish CI vs human votes** - "Verified: +1 (Zuul)" vs "Verified: +1 (username)"
+
+**Vote summary format:**
+```
+Code-Review: +2 (×2), +1 (×1), -1 (×1)
+Verified: +1 (Zuul)
+Workflow: +1
+```
+
+**Status display priorities (from SKILL.md Step 2.5):**
+1. MERGED → **Merged** (bold, this is done)
+2. ABANDONED → Abandoned
+3. NEW + work_in_progress → WIP
+4. NEW + Code-Review -1/-2 → Needs Revision
+5. NEW + Verified -1 → CI Failing
+6. NEW + Code-Review +2 (×2) + Workflow +1 → Ready to Merge
+7. NEW + Code-Review +2 → Approved (need +2×2)
+8. NEW (clean) → Under Review
+
+**Why:** Gerrit's label structure is complex. Stakeholders need "is this ready
+to merge?" not "labels.Code-Review.all[0].value == 2". The status mapping
+provides that translation.
+
+**Enforcement:** Before writing review summary tables, apply the status mapping.
+Never show raw Gerrit status fields like "NEW" without context.
+
+## 10. ASCII-ONLY BOX DIAGRAMS (Non-negotiable)
+
+**All box diagrams MUST use pure ASCII characters. NO UNICODE.**
+
+**Forbidden characters:**
+- Box drawing: ┌ ┐ └ ┘ ├ ┤ ─ │ ┬ ┴ ┼
+- Symbols: ✅ ✓ ✗ → ← ↑ ↓ • ◦ ★
+- Em-dashes: — (use `--`)
+- Any character outside the ASCII range (0x00-0x7F)
+
+**Required ASCII alternatives:**
+- Box corners: `+`
+- Horizontal lines: `-`
+- Vertical lines: `|`
+- Checkmarks: `[OK]` or `[X]`
+- Arrows: `->`, `<-`, `v`, `^`
+- Bullets: `*` or `-`
+
+**Enforcement:**
+1. **Before writing artifacts:** Use only ASCII characters in diagrams
+2. **After writing artifacts:** Run `check_box_alignment.py --fix` on ALL .md files
+3. **Never skip this step** - it must be run before declaring work done
+
+**Script location:**
+```bash
+python3 /home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/ioshaworkflow/scripts/check_box_alignment.py --fix <file.md>
+```
+
+**Why:** Unicode box-drawing characters render inconsistently across browsers, terminals, and markdown viewers. ASCII is universal and works everywhere. This is a hard rule that applies to ALL artifacts in ALL workflows.
+
+**Example:**
+
+WRONG (unicode):
+```
+┌─────────────┐
+│ Hello World │
+└─────────────┘
+```
+
+CORRECT (ASCII):
+```
++-------------+
+| Hello World |
++-------------+
+```
