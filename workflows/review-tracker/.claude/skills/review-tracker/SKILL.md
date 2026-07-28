@@ -75,7 +75,7 @@ Flags are composable:
      - Requires review status = MERGED. If not MERGED, report error and STOP.
      - Requires existing tracker artifact. If missing, report error and STOP.
    - If `--recheck` flag: go to **Recheck Mode** (Step R1)
-   - Otherwise: check if `artifacts/review-tracker/tracker-{number}.md` exists
+   - Otherwise: check if `artifacts/review-tracker/REVIEW-TRACKER-{number}/tracker-{number}.md` exists
      - If exists AND no action flags: tell the user "Tracker already exists. Use `--recheck` to update, or `--force` to regenerate from scratch."
      - If exists: proceed to post-primary actions
      - If not exists: go to **Bootstrap and Initial Scan Mode**:
@@ -207,9 +207,9 @@ After the horizon-code-review skill completes:
 1. Copy the review artifact to the review-tracker bridge artifacts directory:
 
 ```bash
-mkdir -p artifacts/review-tracker/bridge-artifacts
+mkdir -p artifacts/review-tracker/REVIEW-TRACKER-{number}/bridge-artifacts
 cp artifacts/horizon-review/code-${number}.md \
-   artifacts/review-tracker/bridge-artifacts/initial-review-${number}.md
+   artifacts/review-tracker/REVIEW-TRACKER-{number}/bridge-artifacts/initial-review-${number}.md
 ```
 
 2. Extract key data from the review artifact for inclusion in the tracker:
@@ -371,7 +371,7 @@ Determine if this is a common pattern (>20 occurrences) or rare.
 For each completed analysis, write the artifact to:
 
 ```
-artifacts/review-tracker/bridge-artifacts/{thread-id-lower}-analysis.md
+artifacts/review-tracker/REVIEW-TRACKER-{number}/bridge-artifacts/{thread-id-lower}-analysis.md
 ```
 
 Use this format (matching the `templates/code-archaeology-analysis.md.template`):
@@ -497,7 +497,7 @@ attribution, or code inside `> quoted` suggested responses.
 Create the bridge-artifacts directory if it doesn't exist:
 
 ```bash
-mkdir -p artifacts/review-tracker/bridge-artifacts
+mkdir -p artifacts/review-tracker/REVIEW-TRACKER-{number}/bridge-artifacts
 ```
 
 ##### 3.5.4: Incorporate Bridge Results into Tracker
@@ -813,7 +813,7 @@ that publishes changes to a remote. See rules.md NEVER-PUSH rule.
 
 #### Step C1: Validate Prerequisites
 
-1. Verify tracker artifact exists: `artifacts/review-tracker/tracker-{number}.md`
+1. Verify tracker artifact exists: `artifacts/review-tracker/REVIEW-TRACKER-{number}/tracker-{number}.md`
    - If missing: report "Run `/review-tracker {number}` first to create the tracker." and STOP
 2. Parse the tracker to extract:
    - Current patchset number from the `**Current Patchset:**` line
@@ -960,7 +960,7 @@ that publishes changes to a remote. See rules.md NEVER-PUSH rule.
 
 #### Step U1: Validate Prerequisites
 
-1. Verify tracker artifact exists: `artifacts/review-tracker/tracker-{number}.md`
+1. Verify tracker artifact exists: `artifacts/review-tracker/REVIEW-TRACKER-{number}/tracker-{number}.md`
    - If missing: report "Run `/review-tracker {number}` first to create the tracker." and STOP
 2. Verify both feature documents exist:
    - `{feature_path}_DESIGN.md`
@@ -1370,7 +1370,7 @@ Read results.json and incorporate into the verify report. Copy the generated scr
 to artifacts:
 ```bash
 cp {checkout_dir}/playwright_verify.py \
-   artifacts/review-tracker/playwright-verify-{number}.py
+   artifacts/review-tracker/REVIEW-TRACKER-{number}/playwright-verify-{number}.py
 ```
 
 Clean up the VM dev server (if deployed in V4a):
@@ -1485,7 +1485,7 @@ produces a standalone document suitable for sharing with management and colleagu
 
 **Prerequisites:**
 - Review status must be MERGED
-- Tracker artifact must exist at `artifacts/review-tracker/tracker-{number}.md`
+- Tracker artifact must exist at `artifacts/review-tracker/REVIEW-TRACKER-{number}/tracker-{number}.md`
 
 #### Step F1: Validate Prerequisites
 
@@ -1497,7 +1497,7 @@ produces a standalone document suitable for sharing with management and colleagu
    (status: {status}). Final reports are generated after merge." and STOP.
 
 2. Check tracker artifact exists:
-   `artifacts/review-tracker/tracker-{number}.md`
+   `artifacts/review-tracker/REVIEW-TRACKER-{number}/tracker-{number}.md`
    If missing: report "Run `/review-tracker {number}` first to create
    the tracker." and STOP.
 
@@ -1592,7 +1592,7 @@ Analyze the data for honest self-assessment:
 
 #### Step F6: Generate Final Report Document
 
-Write the complete report to `artifacts/review-tracker/final-report-{number}.md`
+Write the complete report to `artifacts/review-tracker/REVIEW-TRACKER-{number}/final-report-{number}.md`
 with these sections in order:
 
 1. Header (review URL, author, final status, total patchsets, duration, comment count)
@@ -1617,7 +1617,7 @@ Print summary to the user:
 ```
 --final-report complete for review {number}:
 
-  Artifact:  artifacts/review-tracker/final-report-{number}.md
+  Artifact:  artifacts/review-tracker/REVIEW-TRACKER-{number}/final-report-{number}.md
   Duration:  {days} days ({first_push} to {merge_date})
   Patchsets: {N} ({rework} reworks, {rebase} rebases)
   Threads:   {N} ({blocking} blocking)
@@ -1637,7 +1637,7 @@ It runs after the primary mode completes (or standalone if the tracker already e
 
 Compute these paths from the workflow root:
 
-- **Source artifact:** `artifacts/review-tracker/tracker-{number}.md`
+- **Source artifact:** `artifacts/review-tracker/REVIEW-TRACKER-{number}/tracker-{number}.md`
 - **Ingest script:** Walk up from the workflow root to find the sibling `ioshaworkflow/` repo,
   then use `scripts/ingest_artifacts.py`
 - **Dashboard data root:** `{ioshaworkflow_repo}/data/investigations/`
@@ -1662,7 +1662,7 @@ rename_map = {'tracker-{number}.md': 'tracker.md'}
 #   - initial-review-{number}.md  (from Step 0.7 code review bridge)
 #   - {thread-id}-analysis.md     (from --deep-dive, referenced in tracker)
 # To find deep-dive files: parse the tracker for bridge-artifact links.
-bridge_dir = 'artifacts/review-tracker/bridge-artifacts'
+bridge_dir = 'artifacts/review-tracker/REVIEW-TRACKER-{number}/bridge-artifacts'
 initial_review = f'initial-review-{number}.md'
 if os.path.exists(f'{bridge_dir}/{initial_review}'):
     rename_map[f'bridge-artifacts/{initial_review}'] = initial_review
@@ -1685,7 +1685,7 @@ if os.path.exists(verify_report):
     rename_map['verify-report-{number}.md'] = 'verify-report.md'
 
 # If --final-report produced a report, add to rename_map
-final_report = 'artifacts/review-tracker/final-report-{number}.md'
+final_report = 'artifacts/review-tracker/REVIEW-TRACKER-{number}/final-report-{number}.md'
 if os.path.exists(final_report):
     rename_map['final-report-{number}.md'] = 'final-report.md'
 ```
