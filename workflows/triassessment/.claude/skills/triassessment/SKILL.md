@@ -318,7 +318,7 @@ concrete code change proposals.
    - **Testing Strategy**: Suggest how to verify the fix works
    - **Migration Notes**: If the change breaks compatibility, note upgrade path
 
-4. **Write `artifacts/triassessment/proposed_fixes.md`** with structure:
+4. **Write `artifacts/triassessment/{CASE_ID}/proposed_fixes.md`** with structure:
 
 ```markdown
 # Proposed Fixes: <TICKET-ID>
@@ -423,7 +423,7 @@ Generated: <timestamp> | Skill: /triassessment --generate-fix | Model: <model-id
 
 ### Step 5: Generate Triage Assessment
 
-Write `artifacts/triassessment/triage_assessment.md` with sections:
+Write `artifacts/triassessment/{CASE_ID}/triage_assessment.md` with sections:
 
 1. **Ticket Summary** -- Key/value table of ticket fields
 2. **Affected Projects** -- (Launchpad only) Per-project status table
@@ -568,7 +568,7 @@ Include a footer: `Generated: <timestamp> | Skill: /triassessment | Model: <mode
 
 ### Step 6: Generate Related Tickets Summary
 
-Write `artifacts/triassessment/related_tickets.md` with sections:
+Write `artifacts/triassessment/{CASE_ID}/related_tickets.md` with sections:
 
 1. **Ticket Hierarchy** -- Table: Level, Ticket, Title, Status, Assignee, Created, Updated
 2. **Blocking Chain** -- Visual representation of blocking relationships
@@ -586,10 +586,12 @@ python scripts/ingest_artifacts.py \
   <CASE_ID> \
   triassessment \
   triassessment \
-  --skill-type triassessment \
+  --skill-type triassessment/<CASE_ID> \
   --title "<ticket-summary-truncated-to-80-chars>" \
   --summary "Triage assessment of <TICKET-ID>: <brief-context>"
 ```
+
+**Note:** The `--skill-type triassessment/<CASE_ID>` points to the per-ticket subdirectory created in Step 5/6.
 
 **Case ID conventions:**
 - Jira: `TRIASSESSMENT-OSPRH-27628`
@@ -631,18 +633,38 @@ python scripts/ingest_artifacts.py \
   <CASE_ID> \
   triassessment \
   triassessment \
-  --skill-type triassessment \
+  --skill-type triassessment/<CASE_ID> \
   --title "<ticket-summary>" \
   --summary "Triage assessment of <TICKET-ID>"
 ```
 
 ## Output
 
-Files written to artifacts/triassessment/:
+Files written to artifacts/triassessment/{CASE_ID}/:
 
 - triage_assessment.md -- Structured assessment with recommendation
 - related_tickets.md -- Related ticket hierarchy and dependencies
 - proposed_fixes.md -- (only if --generate-fix) Concrete code change proposals with diffs
+
+**Directory structure:**
+```
+artifacts/triassessment/
+├── TRIASSESSMENT-OSPRH-33457/
+│   ├── triage_assessment.md
+│   ├── related_tickets.md
+│   └── proposed_fixes.md
+├── TRIASSESSMENT-LP-2161292/
+│   ├── triage_assessment.md
+│   └── related_tickets.md
+└── TRIASSESSMENT-OSPRH-28773/
+    ├── triage_assessment.md
+    └── related_tickets.md
+```
+
+This per-ticket directory structure ensures:
+- No overwrites across different ticket assessments
+- Clean git history (each assessment is a separate directory)
+- Easy archival/deployment (copy entire subdirectories)
 
 ## Knowledge Sources
 

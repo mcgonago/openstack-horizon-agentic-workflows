@@ -1,7 +1,8 @@
 # Review and analysis artifacts — generated output, not source
 artifacts/
-# But keep verify artifacts (source of truth for dashboard [src] links)
+# But keep verify and triassessment artifacts (source of truth for dashboard [src] links)
 !workflows/verify/artifacts/
+!workflows/triassessment/artifacts/
 
 # Claude Code project-specific state (not shared across machines)
 .claude/
