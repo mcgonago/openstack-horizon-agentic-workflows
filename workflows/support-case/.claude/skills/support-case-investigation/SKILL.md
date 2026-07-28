@@ -30,11 +30,28 @@ Investigate a support case related to OpenStack Horizon
 
 ## Output
 
-Files are written to artifacts/support-case/:
+Files are written to artifacts/support-case/{CASE_ID}/:
 
 - investigation_report.md -- Root cause analysis with evidence
 - customer_response.md -- Customer-facing summary with next steps
 - code_trace.md -- Detailed code path analysis
+
+**Directory structure:**
+```
+artifacts/support-case/
+├── SUPPORT-04426889/
+│   ├── investigation_report.md
+│   ├── customer_response.md
+│   └── code_trace.md
+└── SUPPORT-XXXXXX/  (future cases)
+```
+
+**Case ID format:** `SUPPORT-{ticket-number}` (e.g., SUPPORT-04426889)
+
+This per-case directory structure ensures:
+- No overwrites across different support cases
+- Clean git history (each investigation is a separate directory)
+- Easy archival/deployment (copy entire subdirectories)
 
 ## Knowledge Sources
 
