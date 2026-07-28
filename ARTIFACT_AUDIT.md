@@ -5,10 +5,16 @@
 
 ## Summary
 
-**Total workflows with skills:** 5  
-**Workflows using per-case subdirectories:** 1 (verify) + 1 (triassessment, just fixed)  
-**Workflows needing migration:** 1 (support-case)  
+**Total workflows with skills:** 6 (5 in main repo + 1 in separate repo)  
+**Workflows using per-case subdirectories:** 1 (verify) + 2 (triassessment, support-case - just fixed)  
+**Workflows needing migration:** 1 (review-tracker - **separate repository**)  
 **Workflows with no existing cases:** 2 (feature, horizon-review)
+
+**⚠️ CRITICAL FINDING:** review-tracker skill is in a **separate repository**:
+- Location: `openstack-horizon-agentic-workflows-review-tracker`
+- Cases: 5 (REVIEW-TRACKER-977939, 986458, 986478, 992714, 992902)
+- Problem: Flat directory with 10 .md files
+- Risk: HIGH - 5 cases actively tracked, many runs per case
 
 ## Detailed Audit
 
@@ -165,6 +171,50 @@ artifacts/
 **Total:** 18 cases
 
 **Git status:** All committed except TRIASSESSMENT-OSPRH-33457 run-002/003 (just committed)
+
+---
+
+### ⚠️ review-tracker - SEPARATE REPO, NEEDS MIGRATION
+
+**⚠️ CRITICAL:** This skill is in a **SEPARATE REPOSITORY**
+
+**Repository:** `openstack-horizon-agentic-workflows-review-tracker`  
+**Location:** `/home/omcgonag/Work/mymcp/workspace/iproject/projects/ioshaworkflow/repo/openstack-horizon-agentic-workflows-review-tracker`
+
+**Current structure (BROKEN):**
+```
+workflows/review-tracker/artifacts/review-tracker/
+├── tracker-977939.md          ← Flat files, overwrites on each run
+├── tracker-986458.md
+├── tracker-986478.md
+├── tracker-992714.md
+├── tracker-992902.md
+├── final-report-986458.md
+├── final-report-992714.md
+├── final-report-992902.md
+├── bridge-artifacts/          ← Subdirectory
+└── feature-updates/           ← Subdirectory
+```
+
+**Dashboard cases:** 5 (REVIEW-TRACKER-977939, 986458, 986478, 992714, 992902)
+
+**Run counts:**
+- REVIEW-TRACKER-977939: 2 runs
+- REVIEW-TRACKER-986458: 12 runs
+- REVIEW-TRACKER-986478: 5 runs
+- REVIEW-TRACKER-992714: 18 runs ⚠️
+- REVIEW-TRACKER-992902: 9 runs
+
+**Problem:** Active workflow tracking 5 Gerrit reviews with many updates per review
+
+**Risk:** HIGH
+- Multiple runs per case mean frequent overwrites
+- Dashboard has full history, workflows repo has only latest snapshot
+- Loss of intermediate tracker states between runs
+
+**Status:** ⚠️ NEEDS MIGRATION (separate from main repo migration)
+
+---
 
 ## Recommendations
 
