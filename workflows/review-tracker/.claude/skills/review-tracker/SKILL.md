@@ -1695,12 +1695,14 @@ Run the change detection:
 ```bash
 cd {ioshaworkflow_repo} && python3 -c "
 import sys; sys.path.insert(0, 'scripts')
+from pathlib import Path
 from ingest_artifacts import check_for_new_artifacts
+workflows_root = Path('../openstack-horizon-agentic-workflows-review-tracker')
 result = check_for_new_artifacts(
     'REVIEW-TRACKER-{number}',
     'review-tracker',
-    skill_type='review-tracker',
-    source_project_variant='openstack-horizon-agentic-workflows-review-tracker',
+    skill_type='review-tracker/REVIEW-TRACKER-{number}',
+    workflows_root=workflows_root,
     rename_map={rename_map}
 )
 print(result)
@@ -1725,8 +1727,8 @@ python3 {ioshaworkflow_repo}/scripts/ingest_artifacts.py \
     review-tracker \
     --title "{title}" \
     --summary "{summary}" \
-    --skill-type review-tracker \
-    --source-project-variant openstack-horizon-agentic-workflows-review-tracker \
+    --skill-type "review-tracker/REVIEW-TRACKER-{number}" \
+    --workflows-root ../openstack-horizon-agentic-workflows-review-tracker \
     --rename "tracker-{number}.md:tracker.md,bridge-artifacts/initial-review-{number}.md:initial-review-{number}.md"
 ```
 
