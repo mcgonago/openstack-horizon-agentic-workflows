@@ -254,20 +254,33 @@ jira issue create \
   --type Story \
   --parent OSPRH-16422 \
   --summary "Substring Matching for Image Name Filter" \
-  --body "$(cat <<'EOF'
-Replace exact-match image name filter with substring search.
+  --body "$(cat <<'JIRA_BODY'
+Replace exact-match image name filter with substring search in both project and admin Images tables.
 
 TECHNICAL DETAILS
-* Current: exact match via Glance API
-* Proposed: substring via client-side/hybrid/API enhancement
-* Files: openstack_dashboard/dashboards/project/images/images/tables.py:206-210
+
+Current state: ImageFilterAction uses name param with exact match (Glance v2 API limitation)
+
+Proposed change: Implement substring matching via client-side filtering, hybrid approach, or Glance API enhancement
+
+Files affected: openstack_dashboard/dashboards/project/images/images/tables.py lines 206-210, openstack_dashboard/dashboards/admin/images/tables.py
 
 WHY DEFERRED
-Glance API limitation - requires architectural decision on filtering approach.
+
+Deferred due to Glance v2 API limitation -- the name filter performs exact matching only. Changing to substring would require client-side filtering (breaks pagination) or custom hybrid approach not used elsewhere. Radomir Dopieralski marked comment resolved (suggestion, not blocker). Exact-match behavior is consistent with admin Images panel and all other server-side filters in Horizon.
+
+IMPLEMENTATION OPTIONS
+
+Option A: Client-side filtering (breaks pagination for large deployments)
+Option B: Hybrid approach (not used elsewhere in Horizon)
+Option C: Glance API enhancement (requires cross-project coordination)
 
 REFERENCES
-https://review.opendev.org/c/openstack/horizon/+/986478
-EOF
+
+Original review: https://review.opendev.org/c/openstack/horizon/+/986478
+Thread: CMT-RAD-1 (substring matching suggestion)
+Reviewer: Radomir Dopieralski
+JIRA_BODY
 )" \
   --priority Medium \
   --label horizon \
@@ -348,23 +361,34 @@ jira issue create \
   --type Story \
   --parent OSPRH-16422 \
   --summary "Add Owner Filter to Images Table" \
-  --body "$(cat <<'EOF'
+  --body "$(cat <<'JIRA_BODY'
 Add owner filter choice to ImageFilterAction, allowing users to filter images by project UUID.
 
 TECHNICAL DETAILS
-* Current: name, status, disk_format, visibility filters only
-* Proposed: Add owner filter choice
-* Files: openstack_dashboard/dashboards/project/images/images/tables.py:206-210
+
+Current state: ImageFilterAction has name, status, disk_format, visibility filters
+
+Proposed change: Add ('owner', _('Owner ='), True) to filter_choices
+
+API support: Glance v2 supports owner param, openstack_dashboard/api/glance.py passes it through
+
+Files affected: openstack_dashboard/dashboards/project/images/images/tables.py lines 206-210
 
 WHY DEFERRED
-Pending confirmation if needed - requires UUID input (not user-friendly).
+
+Deferred pending confirmation from Radomir Dopieralski whether owner filter is needed alongside visibility. Owner filter requires users to know/type project UUID (not user-friendly) -- old tab-based OwnerFilter provided Project/Public/Shared tabs that abstracted away UUIDs. Visibility filter (already added) restores most old filtering capability. Owner would be useful for operators who know project UUIDs, but may not be needed for typical end users.
 
 UX CONSIDERATION
-Owner filter requires UUID input. Consider help text showing example format.
+
+Owner filter requires UUID input (e.g., d3f4f5g6h7i8j9k0l1m2n3o4p5q6r7s8). Consider adding help text or placeholder showing example format.
 
 REFERENCES
-https://review.opendev.org/c/openstack/horizon/+/986478
-EOF
+
+Original review: https://review.opendev.org/c/openstack/horizon/+/986478
+Thread: CMT-RAD-2 (visibility and owner request)
+Reviewer: Radomir Dopieralski
+Visibility filter was added via --update-feature on 2026-07-16
+JIRA_BODY
 )" \
   --priority Low \
   --label horizon \

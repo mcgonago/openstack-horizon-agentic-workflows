@@ -1785,41 +1785,147 @@ Review {number} ({review_subject}) identified {N} follow-up item(s) deferred dur
 
 ## Follow-Up Items
 
-### FU-{number}-1: {Concise title — under 80 chars}
+### Ticket {N} of {TOTAL}: {Concise Title}
 
 **Suggested by:** {Reviewer Name}
 **Thread:** [CMT-XXX-N](tracker-{number}.md#cmt-xxx-n)
 **Priority:** {HIGH / MEDIUM / LOW}
 **Type:** {Technical Debt / Enhancement / Investigation}
 
-#### Description
+#### Panel 1: Copy/Paste for Jira Web UI (Plain English)
 
-{2-3 sentences describing what needs to be done — extracted from comment thread}
+**Project:** OSPRH  
+**Issue Type:** Story  
+**Parent:** OSPRH-{parent_osprh}  
+**Priority:** {High/Medium/Low}  
+**Labels:** horizon, de-angularize, {technical-debt|ux-improvement}
 
-#### Technical Details
+**Summary:**
+```
+{Concise Jira title — under 100 chars}
+```
 
-- **Current state:** {what the code does now}
-- **Proposed change:** {what the follow-up would do}
-- **Files affected:**
-  - [`path/to/file.py:line`](https://github.com/openstack/horizon/blob/master/path/to/file.py#Lline)
+**Description:**
+```
+{2-3 sentence summary from comment thread}
 
-#### Why Deferred
+TECHNICAL DETAILS
+
+Current state: {what the code does now}
+
+Proposed change: {what the follow-up would do}
+
+Files affected: {file paths with line ranges}
+
+WHY DEFERRED
 
 {Explanation from comment thread — e.g., "Deferred to maintain consistency with existing pattern", "Blocked by Glance API limitation", "Out of scope for this review"}
 
-#### Acceptance Criteria
+REFERENCES
 
-- [ ] {Specific deliverable 1 based on comment thread}
-- [ ] {Specific deliverable 2}
-- [ ] Tests added/updated
-- [ ] Documentation updated if needed
+Original review: https://review.opendev.org/c/openstack/horizon/+/{number}
+Comment thread: CMT-XXX-N ({thread topic})
+Reviewer acceptance: {quote or citation}
+{If applicable: Related pattern/code references}
+```
 
-#### References
+---
 
-- Original review: [https://review.opendev.org/c/openstack/horizon/+/{number}](https://review.opendev.org/c/openstack/horizon/+/{number})
-- Thread: [CMT-XXX-N](tracker-{number}.md#cmt-xxx-n)
-{If bridge artifact exists:}
-- Code analysis: [bridge-artifacts/{thread-id}-analysis.md](bridge-artifacts/{thread-id}-analysis.md)
+#### Panel 2: Copy/Paste for Jira Web UI (Jira Wiki Format)
+
+**Project:** OSPRH  
+**Issue Type:** Story  
+**Parent:** OSPRH-{parent_osprh}  
+**Priority:** {High/Medium/Low}  
+**Labels:** horizon, de-angularize, {technical-debt|ux-improvement}
+
+**Summary:**
+```
+{Concise Jira title — under 100 chars}
+```
+
+**Description:** (Copy this into Jira's description field - it will render nicely)
+```
+{2-3 sentence summary from comment thread}
+
+h3. Technical Details
+
+* Current state: {what the code does now — use |pipes| for inline code}
+* Proposed change: {what the follow-up would do}
+* Files affected: {file paths with :line notation}
+
+h3. Why Deferred
+
+{Explanation from comment thread}
+
+h3. References
+
+* Original review: https://review.opendev.org/c/openstack/horizon/+/{number}
+* Comment thread: CMT-XXX-N ({thread topic})
+* Reviewer acceptance: {quote or citation}
+{If applicable: Related pattern/code references}
+```
+
+---
+
+#### Panel 3: JSON Metadata for Automation
+
+For use with Jira REST API or CLI tools. Requires `JIRA_USER` and `JIRA_TOKEN` environment variables.
+
+**Using jira-cli tool:**
+```bash
+jira issue create \
+  --type Story \
+  --parent OSPRH-{parent_osprh} \
+  --summary "{Concise Jira title}" \
+  --body "$(cat <<'JIRA_BODY'
+{FULL PLAIN ENGLISH DESCRIPTION FROM PANEL 1 — COMPLETE, NOT ABBREVIATED}
+
+{Include ALL sections: summary, TECHNICAL DETAILS, WHY DEFERRED, REFERENCES}
+{Use the exact same content as Panel 1, just without the markdown code fence}
+JIRA_BODY
+)" \
+  --priority {High/Medium/Low} \
+  --label horizon \
+  --label de-angularize \
+  --label {technical-debt|ux-improvement}
+```
+
+**Using curl with REST API:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -u "${JIRA_USER}:${JIRA_TOKEN}" \
+  https://redhat.atlassian.net/rest/api/2/issue \
+  -d @- <<'EOF'
+{
+  "fields": {
+    "project": {"key": "OSPRH"},
+    "issuetype": {"name": "Story"},
+    "parent": {"key": "OSPRH-{parent_osprh}"},
+    "summary": "{Concise Jira title}",
+    "description": "{JIRA WIKI FORMAT FROM PANEL 2 — WITH h3. headers and |pipes| — use \\n for newlines}",
+    "priority": {"name": "{High/Medium/Low}"},
+    "labels": ["horizon", "de-angularize", "{technical-debt|ux-improvement}"]
+  }
+}
+EOF
+```
+
+**Raw JSON metadata:**
+```json
+{
+  "summary": "{Concise Jira title}",
+  "description_plain": "{Plain English description from Panel 1}",
+  "description_jira_wiki": "{Jira wiki format from Panel 2}",
+  "priority": "{High/Medium/Low}",
+  "labels": ["horizon", "de-angularize", "{technical-debt|ux-improvement}"],
+  "parent_key": "OSPRH-{parent_osprh}",
+  "suggested_by": "{Reviewer Name}",
+  "tracker_thread": "CMT-XXX-N",
+  "gerrit_review": "{number}"
+}
+```
 
 ---
 
@@ -1827,47 +1933,15 @@ Review {number} ({review_subject}) identified {N} follow-up item(s) deferred dur
 
 ---
 
-## Metadata for Jira Creation
+## Notes
 
-```json
-{
-  "parent_jira": "OSPRH-{parent_osprh}",
-  "parent_summary": "{parent_summary}",
-  "project_key": "OSPRH",
-  "issue_type": "Story",
-  "items": [
-    {
-      "summary": "{Concise Jira title — under 100 chars}",
-      "description": "{Jira description with Gerrit links — use Jira wiki format, not markdown}",
-      "priority": "Medium",
-      "labels": ["horizon", "de-angularize", "technical-debt"],
-      "parent_key": "OSPRH-{parent_osprh}"
-    }
-  ]
-}
-```
-```
+Each follow-up item above provides three formats for Jira ticket creation:
 
-**Jira description format** (Jira wiki syntax, NOT markdown):
+1. **Panel 1:** Plain English - copy/paste into Jira web UI
+2. **Panel 2:** Jira Wiki Format - renders with nice formatting in Jira
+3. **Panel 3:** CLI/API commands - ready-to-run automation
 
-```
-{Summary from Description section}
-
-h3. Technical Details
-
-* Current state: {...}
-* Proposed change: {...}
-* Files affected: path/to/file.py:line
-
-h3. Why Deferred
-
-{Why Deferred section}
-
-h3. References
-
-* Original review: https://review.opendev.org/c/openstack/horizon/+/{number}
-* Thread: {gerrit comment link if available}
-```
+All three panels contain the same complete information. Use whichever method you prefer.
 
 #### Step FU4: Report
 

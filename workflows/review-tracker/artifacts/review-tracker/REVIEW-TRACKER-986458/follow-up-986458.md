@@ -150,16 +150,54 @@ jira issue create \
   --type Story \
   --parent OSPRH-16426 \
   --summary "Adopt PolicyTargetMixin for Image Row Actions" \
-  --body "$(cat <<'EOF'
+  --body "$(cat <<'JIRA_BODY'
 Replace hardcoded image.owner checks in image row actions with PolicyTargetMixin pattern to respect custom Glance RBAC policies.
 
 TECHNICAL DETAILS
-* Current state: DeactivateImage, ReactivateImage, DeleteImage, EditImage all have hardcoded image.owner checks
-* Proposed change: Create ImagePolicyTargetMixin following Volume panel pattern
-* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:135-300
+
+Current state: DeactivateImage, ReactivateImage, DeleteImage, EditImage all have hardcoded "image.owner == request.user.tenant_id" checks in their allowed() methods.
+
+Proposed change: Create ImagePolicyTargetMixin following the Volume panel pattern (openstack_dashboard/dashboards/project/volumes/tables.py line 47).
+
+Files affected: openstack_dashboard/dashboards/project/images/images/tables.py lines 135-300
 
 WHY DEFERRED
-Deferred to maintain consistency with existing pattern across 58+ image actions.
+
+Deferred to maintain consistency with existing pattern across 58+ image actions. Changing only DeactivateImage/ReactivateImage would be inconsistent with DeleteImage, EditImage, UpdateMetadata. Radomir Dopieralski accepted current approach for consistency and suggested PolicyTargetMixin as follow-up addressing all image actions together.
+
+REFERENCES
+
+Original review: https://review.opendev.org/c/openstack/horizon/+/986458
+Comment thread: CMT-RAD-1 (owner check discussion)
+Reviewer acceptance: CMT-RAD-3 ("Let's explore this in followup patches")
+Volume panel pattern: https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/volumes/tables.py#L47
+JIRA_BODY
+)" \
+  --priority Medium \
+  --label horizon \
+  --label de-angularize \
+  --label technical-debt
+```
+
+**Using curl with REST API:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -u "${JIRA_USER}:${JIRA_TOKEN}" \
+  https://redhat.atlassian.net/rest/api/2/issue \
+  -d @- <<'EOF'
+{
+  "fields": {
+    "project": {"key": "OSPRH"},
+    "issuetype": {"name": "Story"},
+    "parent": {"key": "OSPRH-16426"},
+    "summary": "Adopt PolicyTargetMixin for Image Row Actions",
+    "description": "Replace hardcoded image.owner checks in image row actions with PolicyTargetMixin pattern to respect custom Glance RBAC policies.\n\nh3. Technical Details\n\n* Current state: DeactivateImage, ReactivateImage, DeleteImage, EditImage all have hardcoded |image.owner == request.user.tenant_id| checks\n* Proposed change: Create ImagePolicyTargetMixin following Volume panel pattern (openstack_dashboard/dashboards/project/volumes/tables.py:47)\n* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:135-300\n\nh3. Why Deferred\n\nDeferred to maintain consistency with existing pattern across 58+ image actions. Changing only DeactivateImage/ReactivateImage would be inconsistent with DeleteImage, EditImage, UpdateMetadata. Radomir Dopieralski accepted current approach for consistency and suggested PolicyTargetMixin as follow-up addressing all image actions together.\n\nh3. References\n\n* Original review: https://review.opendev.org/c/openstack/horizon/+/986458\n* Comment thread: CMT-RAD-1 (owner check discussion)\n* Reviewer acceptance: CMT-RAD-3 (\"Let's explore this in followup patches\")\n* Volume panel pattern: https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/volumes/tables.py#L47",
+    "priority": {"name": "Medium"},
+    "labels": ["horizon", "de-angularize", "technical-debt"]
+  }
+}
+EOF
 
 REFERENCES
 https://review.opendev.org/c/openstack/horizon/+/986458
