@@ -60,6 +60,9 @@ Flags are composable:
    - `--create-patch`: set `create_patch = true`
    - `--verify-patch`: set `verify_patch = true`
    - `--final-report`: set `final_report = true`
+   - `--follow-up`: set `follow_up = true`
+   - `--produce-jira`: set `produce_jira = true`
+   - `--osprh NUMBER`: set `parent_osprh = NUMBER`
    - `--horizon-url URL`: set `horizon_url = URL` (enables Playwright browser testing)
    - If `horizon_url` not set by flag, check `HORIZON_URL` env var. If not set, Playwright step is skipped.
    - `--clone-at PATH`: set `clone_at = PATH`
@@ -93,6 +96,8 @@ Flags are composable:
        5. Set `publish_after = true` (auto-publish on first run)
 
 4. **Post-primary-mode actions** (in order):
+   - If `follow_up`: go to **Follow-Up Mode** (Step FU1)
+   - If `produce_jira`: go to **Produce Jira Mode** (Step PJ1)
    - If `update_feature`: go to **Update Feature Mode** (Step U1)
    - If `create_patch`: go to **Create Patch Mode** (Step C1)
    - If `verify_patch`: go to **Verify Patch Mode** (Step V1)
@@ -1697,6 +1702,321 @@ If `publish_after` is set, proceed to Publish Mode (Step P1).
 
 ---
 
+### Follow-Up Mode
+
+Analyzes comment threads for deferred follow-up work and generates a structured artifact documenting items to be addressed in future changes.
+
+#### Step FU1: Validate Prerequisites
+
+1. **Check --osprh flag**: If `parent_osprh` not set, report:
+   ```
+   ERROR: --osprh flag required for follow-up mode.
+   
+   Usage: /review-tracker {number} --osprh {parent-ticket-number} --follow-up
+   
+   Example: /review-tracker 986458 --osprh 16426 --follow-up
+   ```
+   STOP.
+
+2. **Validate parent ticket**: Call `mcp__user-jiraMcp__jira_get_issue` with key `OSPRH-{parent_osprh}`:
+   - If found: extract `summary` for later use
+   - If not found: report "Parent ticket OSPRH-{parent_osprh} not found. Verify ticket number." and STOP
+
+3. **Verify tracker exists**: Check `workflows/review-tracker/artifacts/review-tracker/REVIEW-TRACKER-{number}/tracker-{number}.md`
+   - If missing: report "Run `/review-tracker {number}` first to create the tracker." and STOP
+
+4. **Check for existing follow-up artifact**: Check `workflows/review-tracker/artifacts/review-tracker/REVIEW-TRACKER-{number}/follow-up-{number}.md`
+   - If exists: report artifact path and STOP with message "Follow-up artifact already exists. Delete it to regenerate."
+
+5. **Read tracker**: Parse comment threads, statuses, and thread metadata
+
+#### Step FU2: Analyze Comments for Deferred Work
+
+For each comment thread in the tracker document:
+
+1. **Check for deferral signals**:
+   - Keywords: "follow-up", "followup", "explore this later", "in a future patch", "in a separate change", "TODO", "FIXME", "let's do that later", "sounds good for follow-up"
+   - Thread status: RESOLVED with acceptance language
+
+2. **Extract follow-up data if signals found**:
+   - **Who suggested it**: Reviewer name from thread
+   - **What it is**: Technical description from comment text
+   - **Why deferred**: Reason from comment (consistency, scope, API limitation, blocker vs suggestion)
+   - **File/line**: From thread metadata
+   - **Bridge artifact link**: If available from deep-dive
+
+3. **Classify each item**:
+   - **Priority**: HIGH (blocking concern, deferred for scope) / MEDIUM (improvement) / LOW (nice-to-have)
+   - **Type**: Technical Debt / Enhancement / Investigation
+
+**Minimum threshold**: If fewer than 1 follow-up item found, report:
+```
+No follow-up work identified in review {number}.
+
+All comment threads were either:
+- Addressed in the review itself
+- Not deferring work to future changes
+- Informational only
+
+No follow-up artifact created.
+```
+STOP.
+
+#### Step FU3: Generate Follow-Up Artifact
+
+Write `workflows/review-tracker/artifacts/review-tracker/REVIEW-TRACKER-{number}/follow-up-{number}.md`:
+
+```markdown
+# Follow-Up Work — Review {number}
+
+**Review:** [https://review.opendev.org/c/openstack/horizon/+/{number}](https://review.opendev.org/c/openstack/horizon/+/{number})
+**Parent Jira:** [OSPRH-{parent_osprh}](https://redhat.atlassian.net/browse/OSPRH-{parent_osprh})
+**Parent Summary:** {parent_summary from jira_get_issue}
+**Generated:** {YYYY-MM-DD HH:MM UTC}
+**Review Status:** {MERGED / IN REVIEW / ABANDONED}
+
+---
+
+## Summary
+
+Review {number} ({review_subject}) identified {N} follow-up item(s) deferred during review discussions.
+
+---
+
+## Follow-Up Items
+
+### FU-{number}-1: {Concise title — under 80 chars}
+
+**Suggested by:** {Reviewer Name}
+**Thread:** [CMT-XXX-N](tracker-{number}.md#cmt-xxx-n)
+**Priority:** {HIGH / MEDIUM / LOW}
+**Type:** {Technical Debt / Enhancement / Investigation}
+
+#### Description
+
+{2-3 sentences describing what needs to be done — extracted from comment thread}
+
+#### Technical Details
+
+- **Current state:** {what the code does now}
+- **Proposed change:** {what the follow-up would do}
+- **Files affected:**
+  - [`path/to/file.py:line`](https://github.com/openstack/horizon/blob/master/path/to/file.py#Lline)
+
+#### Why Deferred
+
+{Explanation from comment thread — e.g., "Deferred to maintain consistency with existing pattern", "Blocked by Glance API limitation", "Out of scope for this review"}
+
+#### Acceptance Criteria
+
+- [ ] {Specific deliverable 1 based on comment thread}
+- [ ] {Specific deliverable 2}
+- [ ] Tests added/updated
+- [ ] Documentation updated if needed
+
+#### References
+
+- Original review: [https://review.opendev.org/c/openstack/horizon/+/{number}](https://review.opendev.org/c/openstack/horizon/+/{number})
+- Thread: [CMT-XXX-N](tracker-{number}.md#cmt-xxx-n)
+{If bridge artifact exists:}
+- Code analysis: [bridge-artifacts/{thread-id}-analysis.md](bridge-artifacts/{thread-id}-analysis.md)
+
+---
+
+{Repeat for each follow-up item}
+
+---
+
+## Metadata for Jira Creation
+
+```json
+{
+  "parent_jira": "OSPRH-{parent_osprh}",
+  "parent_summary": "{parent_summary}",
+  "project_key": "OSPRH",
+  "issue_type": "Story",
+  "items": [
+    {
+      "summary": "{Concise Jira title — under 100 chars}",
+      "description": "{Jira description with Gerrit links — use Jira wiki format, not markdown}",
+      "priority": "Medium",
+      "labels": ["horizon", "de-angularize", "technical-debt"],
+      "parent_key": "OSPRH-{parent_osprh}"
+    }
+  ]
+}
+```
+```
+
+**Jira description format** (Jira wiki syntax, NOT markdown):
+
+```
+{Summary from Description section}
+
+h3. Technical Details
+
+* Current state: {...}
+* Proposed change: {...}
+* Files affected: path/to/file.py:line
+
+h3. Why Deferred
+
+{Why Deferred section}
+
+h3. References
+
+* Original review: https://review.opendev.org/c/openstack/horizon/+/{number}
+* Thread: {gerrit comment link if available}
+```
+
+#### Step FU4: Report
+
+Print summary to user:
+
+```
+--follow-up complete for review {number}:
+
+  Parent Jira:   OSPRH-{parent_osprh} ({parent_summary})
+  Artifact:      workflows/review-tracker/artifacts/review-tracker/REVIEW-TRACKER-{number}/follow-up-{number}.md
+  Items found:   {N} follow-up items
+  Suggested by:  {comma-separated list of reviewer names}
+
+  Follow-up items:
+  1. FU-{number}-1: {title} (Priority: {priority}, suggested by {reviewer})
+  {... one line per item ...}
+
+  Next steps:
+  - Review the artifact at the path above
+  - Run with --produce-jira to create Jira tickets:
+    /review-tracker {number} --osprh {parent_osprh} --produce-jira
+```
+
+If `publish_after` is set, proceed to Publish Mode (Step P1).
+
+---
+
+### Produce Jira Mode
+
+Creates Jira tickets from the follow-up artifact metadata. Requires credentials in environment variables.
+
+#### Step PJ1: Validate Prerequisites
+
+1. **Check follow-up artifact exists**: Look for `workflows/review-tracker/artifacts/review-tracker/REVIEW-TRACKER-{number}/follow-up-{number}.md`
+   - If missing: report "Run `/review-tracker {number} --osprh {N} --follow-up` first to generate follow-up artifact." and STOP
+
+2. **Read artifact**: Load the markdown file
+
+3. **Parse JSON metadata**: Extract the JSON block at the end (between ` ```json` and ` ``` `)
+   - Parse as JSON
+   - Extract `parent_jira`, `project_key`, `items[]`
+
+4. **Validate credentials**: Check environment variables:
+   - `JIRA_USER`: should be email address (e.g., `omcgonag@redhat.com`)
+   - `JIRA_TOKEN`: API token (NOT password)
+   - If either missing: report setup instructions and STOP:
+     ```
+     ERROR: Jira credentials not found.
+     
+     Set these environment variables:
+       export JIRA_USER=your-email@redhat.com
+       export JIRA_TOKEN=your-api-token
+     
+     To create an API token:
+       https://id.atlassian.com/manage-profile/security/api-tokens
+     ```
+
+#### Step PJ2: Check for Existing Tickets
+
+For each item in `items[]`:
+
+1. **Extract search keywords** from `summary` (first 3-5 meaningful words)
+
+2. **Search Jira** using `mcp__user-jiraMcp__jira_search_issues`:
+   ```
+   JQL: project = OSPRH AND summary ~ "{keywords}" AND parent = {parent_jira} AND status != Closed
+   ```
+
+3. **If found**: Mark item as "already exists" with ticket key, add to skip list
+
+#### Step PJ3: Create Jira Tickets
+
+For each item NOT in skip list:
+
+**Use Jira REST API via curl** (jiraMcp doesn't expose create endpoint):
+
+```bash
+JIRA_USER="{from env}"
+JIRA_TOKEN="{from env}"
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -u "${JIRA_USER}:${JIRA_TOKEN}" \
+  https://redhat.atlassian.net/rest/api/2/issue \
+  -d '{
+    "fields": {
+      "project": {"key": "{project_key}"},
+      "summary": "{item.summary}",
+      "description": "{item.description}",
+      "issuetype": {"name": "{item.issue_type}"},
+      "priority": {"name": "{item.priority}"},
+      "labels": {item.labels},
+      "parent": {"key": "{item.parent_key}"}
+    }
+  }'
+```
+
+**Parse response**:
+- Success (HTTP 201): Extract `key` from JSON response (e.g., `OSPRH-12345`)
+- Failure (HTTP 400/401/403): Log error, continue with next item
+- Auth failure (HTTP 401): Report credential issue and STOP
+
+**Rate limiting**: If response is HTTP 429, sleep 60s and retry once.
+
+#### Step PJ4: Update Follow-Up Artifact
+
+Append a new section to the artifact:
+
+```markdown
+---
+
+## Jira Tickets Created
+
+**Created:** {YYYY-MM-DD HH:MM UTC}
+
+| Item | Jira Key | Status | URL |
+|------|----------|--------|-----|
+| FU-{number}-1 | OSPRH-XXXXX | Created | [OSPRH-XXXXX](https://redhat.atlassian.net/browse/OSPRH-XXXXX) |
+| FU-{number}-2 | OSPRH-YYYYY | Already existed | [OSPRH-YYYYY](https://redhat.atlassian.net/browse/OSPRH-YYYYY) |
+| FU-{number}-3 | (failed) | Error: {error message} | — |
+```
+
+#### Step PJ5: Report
+
+Print summary to user:
+
+```
+--produce-jira complete for review {number}:
+
+  Parent Jira:    OSPRH-{parent_osprh}
+  Artifact:       follow-up-{number}.md (updated with Jira links)
+  
+  Results:
+  - Created:      {N} new tickets
+  - Already exist: {N} tickets
+  - Failed:       {N} errors
+  
+  Tickets created:
+  - OSPRH-XXXXX: {title}
+  - OSPRH-YYYYY: {title}
+  
+  View parent and children:
+  https://redhat.atlassian.net/issues/?jql=parent%3DOSPRH-{parent_osprh}
+```
+
+If `publish_after` is set, proceed to Publish Mode (Step P1).
+
+---
+
 ### Publish Mode — Update Artifact Dashboard
 
 This mode publishes the current tracker artifact to the ioshaworkflow dashboard.
@@ -1758,6 +2078,11 @@ if os.path.exists(verify_report):
 final_report = f'{artifact_dir}/final-report-{number}.md'
 if os.path.exists(final_report):
     rename_map['final-report-{number}.md'] = 'final-report.md'
+
+# If --follow-up produced a follow-up artifact, add to rename_map
+follow_up = f'{artifact_dir}/follow-up-{number}.md'
+if os.path.exists(follow_up):
+    rename_map['follow-up-{number}.md'] = 'follow-up.md'
 ```
 
 Run the change detection:
