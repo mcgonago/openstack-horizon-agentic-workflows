@@ -25,6 +25,7 @@ The user will provide one of:
 - A change number with `--final-report` flag (post-merge assessment with metrics)
 - A change number with `--update-artifact-dashboard` flag (publish to ioshaworkflow dashboard)
 - A change number with `--clone-at PATH` flag (specify where to clone the review code)
+- A change number with `--repo-path PATH` flag (use existing repo checkout, skip cloning)
 - A change number with `--update-feature PATH` flag (apply code changes from external design/implementation docs)
 
 Flags are composable:
@@ -39,6 +40,7 @@ Flags are composable:
 /review-tracker 977939 --final-report --update-artifact-dashboard
 /review-tracker 986458 --clone-at /tmp/my-review
 /review-tracker 986458 --clone-at /tmp/my-review --create-patch --verify-patch
+/review-tracker 998960 --repo-path /path/to/existing/horizon/checkout --create-patch --verify-patch
 /review-tracker 986478 --update-feature /path/to/IOSHAWORKFLOW_REVIEW_986478_ADD_VISIBILITY_OWNER
 /review-tracker 986478 --update-feature /path/to/FEATURE_BASE --verify-patch
 /review-tracker 986478 --update-feature /path/to/FEATURE_BASE --verify-patch --update-artifact-dashboard
@@ -64,6 +66,11 @@ Flags are composable:
    - If `clone_at` not set by flag, check `REVIEW_CLONE_ROOT` env var.
    - If neither set, use default: `IPROJECT_ROOT/projects/review_{number}/reviews/`
      where `IPROJECT_ROOT = /home/omcgonag/Work/mymcp/workspace/iproject`
+   - `--repo-path PATH`: set `repo_path = PATH`
+     Use an existing repository checkout instead of cloning. The repo must be a Horizon checkout.
+     When set, skips Step 0.6 (clone) entirely. `--create-patch` and `--verify-patch` will use this path.
+     **IMPORTANT**: The existing repo must be clean (no uncommitted changes) and on a branch.
+     The skill will `git fetch` the review patchset and checkout FETCH_HEAD.
    - `--update-feature PATH`: set `update_feature = true`, set `feature_path = PATH`
      PATH is the base path without `_DESIGN.md` / `_IMPLEMENTATION.md` suffixes.
      Both `{PATH}_DESIGN.md` and `{PATH}_IMPLEMENTATION.md` must exist.
@@ -127,10 +134,50 @@ mkdir -p "${CLONE_ROOT}"
 
 **Skip this step if:**
 - `--clone-at` was provided (user is managing their own directory)
+- `--repo-path` was provided (user providing existing checkout)
 - `REVIEW_CLONE_ROOT` env var is set
 - Project directory already exists
 
 #### Step 0.6: Clone Review Code
+
+**If `repo_path` is set (--repo-path flag):**
+
+Use the provided repository path directly:
+
+```
+CLONE_DIR = repo_path
+LAST2 = number % 100, zero-padded to 2 digits
+PROJECT = Gerrit project path (e.g., openstack/horizon)
+PATCHSET = current patchset number from Gerrit API
+```
+
+Validate and fetch the review patchset:
+
+```bash
+cd "${CLONE_DIR}"
+
+# Verify it's a git repo
+if [ ! -d .git ]; then
+    echo "ERROR: ${CLONE_DIR} is not a git repository"
+    STOP
+fi
+
+# Check for dirty state
+if [ -n "$(git status --porcelain)" ]; then
+    echo "WARNING: Existing repo has uncommitted changes:"
+    git status --short
+    echo ""
+    echo "Clean up the checkout before proceeding."
+    STOP
+fi
+
+# Fetch and checkout the review patchset
+echo "Using existing repo at ${CLONE_DIR}"
+git fetch origin "refs/changes/${LAST2}/${number}/${PATCHSET}"
+git checkout FETCH_HEAD
+```
+
+**Otherwise (no --repo-path flag):**
 
 Resolve the clone root path:
 
@@ -833,6 +880,18 @@ For each open entry in "What Needs to Change":
 
 #### Step C3: Locate or Clone the Review
 
+**If `repo_path` is set (--repo-path flag):**
+
+Use the provided repository directly (already checked out in Step 0.6):
+
+```
+CHECKOUT_DIR = repo_path
+```
+
+Skip to Step C4 (the repo is already on the correct patchset from Step 0.6).
+
+**Otherwise:**
+
 Compute paths using the same clone root as Step 0.6:
 
 ```
@@ -1006,6 +1065,16 @@ changes = [
 #### Step U3: Locate or Clone the Review
 
 Same path resolution as Step C3 (Create Patch Mode):
+
+**If `repo_path` is set (--repo-path flag):**
+
+```
+CHECKOUT_DIR = repo_path
+```
+
+Skip to Step U4 (the repo is already on the correct patchset from Step 0.6).
+
+**Otherwise:**
 
 ```
 if clone_at is set:
