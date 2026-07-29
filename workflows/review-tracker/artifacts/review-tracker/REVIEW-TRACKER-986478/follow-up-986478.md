@@ -201,3 +201,194 @@ Thread: CMT-RAD-2 (visibility and owner request)
 Reviewer: Radomir Dopieralski
 Visibility filter was added via --update-feature on 2026-07-16
 ```
+
+---
+
+### Ticket 1 of 2: Substring Matching for Image Name Filter
+
+#### Panel 2: Copy/Paste for Jira Web UI (Jira Wiki Format)
+
+**Project:** OSPRH  
+**Issue Type:** Story  
+**Parent:** OSPRH-16422  
+**Priority:** Medium  
+**Labels:** horizon, de-angularize, ux-improvement
+
+**Summary:**
+```
+Substring Matching for Image Name Filter
+```
+
+**Description:** (Copy this into Jira's description field - it will render nicely)
+```
+Replace exact-match image name filter with substring search in both project and admin Images tables.
+
+h3. Technical Details
+
+* Current state: ImageFilterAction uses |name| param with exact match (Glance v2 API limitation)
+* Proposed change: Implement substring matching via client-side filtering, hybrid approach, or Glance API enhancement
+* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:206-210, openstack_dashboard/dashboards/admin/images/tables.py
+
+h3. Why Deferred
+
+Deferred due to Glance v2 API limitation -- the name filter performs exact matching only. Changing to substring would require client-side filtering (breaks pagination) or custom hybrid approach not used elsewhere. Radomir Dopieralski marked comment resolved (suggestion, not blocker). Exact-match behavior is consistent with admin Images panel and all other server-side filters in Horizon.
+
+h3. Implementation Options
+
+* Option A: Client-side filtering (breaks pagination for large deployments)
+* Option B: Hybrid approach (not used elsewhere in Horizon)
+* Option C: Glance API enhancement (requires cross-project coordination)
+
+h3. References
+
+* Original review: https://review.opendev.org/c/openstack/horizon/+/986478
+* Thread: CMT-RAD-1 (substring matching suggestion)
+* Reviewer: Radomir Dopieralski
+```
+
+#### Panel 3: JSON Metadata for Automation
+
+**Using jira-cli tool:**
+```bash
+jira issue create \
+  --type Story \
+  --parent OSPRH-16422 \
+  --summary "Substring Matching for Image Name Filter" \
+  --body "$(cat <<'EOF'
+Replace exact-match image name filter with substring search.
+
+TECHNICAL DETAILS
+* Current: exact match via Glance API
+* Proposed: substring via client-side/hybrid/API enhancement
+* Files: openstack_dashboard/dashboards/project/images/images/tables.py:206-210
+
+WHY DEFERRED
+Glance API limitation - requires architectural decision on filtering approach.
+
+REFERENCES
+https://review.opendev.org/c/openstack/horizon/+/986478
+EOF
+)" \
+  --priority Medium \
+  --label horizon \
+  --label de-angularize \
+  --label ux-improvement
+```
+
+**Using curl with REST API:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -u "${JIRA_USER}:${JIRA_TOKEN}" \
+  https://redhat.atlassian.net/rest/api/2/issue \
+  -d @- <<'EOF'
+{
+  "fields": {
+    "project": {"key": "OSPRH"},
+    "summary": "Substring Matching for Image Name Filter",
+    "description": "Replace exact-match image name filter with substring search in both project and admin Images tables.\n\nh3. Technical Details\n\n* Current state: ImageFilterAction uses |name| param with exact match (Glance v2 API limitation)\n* Proposed change: Implement substring matching via client-side filtering, hybrid approach, or Glance API enhancement\n* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:206-210, openstack_dashboard/dashboards/admin/images/tables.py\n\nh3. Why Deferred\n\nDeferred due to Glance v2 API limitation -- the name filter performs exact matching only. Changing to substring would require client-side filtering (breaks pagination) or custom hybrid approach not used elsewhere. Radomir Dopieralski marked comment resolved (suggestion, not blocker). Exact-match behavior is consistent with admin Images panel and all other server-side filters in Horizon.\n\nh3. Implementation Options\n\n* Option A: Client-side filtering (breaks pagination for large deployments)\n* Option B: Hybrid approach (not used elsewhere in Horizon)\n* Option C: Glance API enhancement (requires cross-project coordination)\n\nh3. References\n\n* Original review: https://review.opendev.org/c/openstack/horizon/+/986478\n* Thread: CMT-RAD-1 (substring matching suggestion)\n* Reviewer: Radomir Dopieralski",
+    "issuetype": {"name": "Story"},
+    "priority": {"name": "Medium"},
+    "labels": ["horizon", "de-angularize", "ux-improvement"],
+    "parent": {"key": "OSPRH-16422"}
+  }
+}
+EOF
+```
+
+---
+
+### Ticket 2 of 2: Add Owner Filter to Images Table
+
+#### Panel 2: Copy/Paste for Jira Web UI (Jira Wiki Format)
+
+**Project:** OSPRH  
+**Issue Type:** Story  
+**Parent:** OSPRH-16422  
+**Priority:** Low  
+**Labels:** horizon, de-angularize, ux-improvement
+
+**Summary:**
+```
+Add Owner Filter to Images Table
+```
+
+**Description:** (Copy this into Jira's description field - it will render nicely)
+```
+Add owner filter choice to ImageFilterAction, allowing users to filter images by project UUID.
+
+h3. Technical Details
+
+* Current state: ImageFilterAction has name, status, disk_format, visibility filters
+* Proposed change: Add |('owner', _('Owner ='), True)| to filter_choices
+* API support: Glance v2 supports owner param, openstack_dashboard/api/glance.py passes it through
+* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:206-210
+
+h3. Why Deferred
+
+Deferred pending confirmation from Radomir Dopieralski whether owner filter is needed alongside visibility. Owner filter requires users to know/type project UUID (not user-friendly) -- old tab-based OwnerFilter provided Project/Public/Shared tabs that abstracted away UUIDs. Visibility filter (already added) restores most old filtering capability. Owner would be useful for operators who know project UUIDs, but may not be needed for typical end users.
+
+h3. UX Consideration
+
+Owner filter requires UUID input (e.g., |d3f4f5g6h7i8j9k0l1m2n3o4p5q6r7s8|). Consider adding help text or placeholder showing example format.
+
+h3. References
+
+* Original review: https://review.opendev.org/c/openstack/horizon/+/986478
+* Thread: CMT-RAD-2 (visibility and owner request)
+* Reviewer: Radomir Dopieralski
+* Visibility filter was added via --update-feature on 2026-07-16
+```
+
+#### Panel 3: JSON Metadata for Automation
+
+**Using jira-cli tool:**
+```bash
+jira issue create \
+  --type Story \
+  --parent OSPRH-16422 \
+  --summary "Add Owner Filter to Images Table" \
+  --body "$(cat <<'EOF'
+Add owner filter choice to ImageFilterAction, allowing users to filter images by project UUID.
+
+TECHNICAL DETAILS
+* Current: name, status, disk_format, visibility filters only
+* Proposed: Add owner filter choice
+* Files: openstack_dashboard/dashboards/project/images/images/tables.py:206-210
+
+WHY DEFERRED
+Pending confirmation if needed - requires UUID input (not user-friendly).
+
+UX CONSIDERATION
+Owner filter requires UUID input. Consider help text showing example format.
+
+REFERENCES
+https://review.opendev.org/c/openstack/horizon/+/986478
+EOF
+)" \
+  --priority Low \
+  --label horizon \
+  --label de-angularize \
+  --label ux-improvement
+```
+
+**Using curl with REST API:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -u "${JIRA_USER}:${JIRA_TOKEN}" \
+  https://redhat.atlassian.net/rest/api/2/issue \
+  -d @- <<'EOF'
+{
+  "fields": {
+    "project": {"key": "OSPRH"},
+    "summary": "Add Owner Filter to Images Table",
+    "description": "Add owner filter choice to ImageFilterAction, allowing users to filter images by project UUID.\n\nh3. Technical Details\n\n* Current state: ImageFilterAction has name, status, disk_format, visibility filters\n* Proposed change: Add |('owner', _('Owner ='), True)| to filter_choices\n* API support: Glance v2 supports owner param, openstack_dashboard/api/glance.py passes it through\n* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:206-210\n\nh3. Why Deferred\n\nDeferred pending confirmation from Radomir Dopieralski whether owner filter is needed alongside visibility. Owner filter requires users to know/type project UUID (not user-friendly) -- old tab-based OwnerFilter provided Project/Public/Shared tabs that abstracted away UUIDs. Visibility filter (already added) restores most old filtering capability. Owner would be useful for operators who know project UUIDs, but may not be needed for typical end users.\n\nh3. UX Consideration\n\nOwner filter requires UUID input (e.g., |d3f4f5g6h7i8j9k0l1m2n3o4p5q6r7s8|). Consider adding help text or placeholder showing example format.\n\nh3. References\n\n* Original review: https://review.opendev.org/c/openstack/horizon/+/986478\n* Thread: CMT-RAD-2 (visibility and owner request)\n* Reviewer: Radomir Dopieralski\n* Visibility filter was added via --update-feature on 2026-07-16",
+    "issuetype": {"name": "Story"},
+    "priority": {"name": "Low"},
+    "labels": ["horizon", "de-angularize", "ux-improvement"],
+    "parent": {"key": "OSPRH-16422"}
+  }
+}
+EOF
+```
