@@ -62,8 +62,137 @@ Deferred to maintain consistency with the existing pattern across 58+ image acti
 
 ---
 
-## Metadata for Jira Creation
+## How to Create Jira Tickets
 
+### Panel 1: Copy/Paste for Jira Web UI (Plain English)
+
+**Project:** OSPRH  
+**Issue Type:** Story  
+**Parent:** OSPRH-16426  
+**Priority:** Medium  
+**Labels:** horizon, de-angularize, technical-debt
+
+**Summary:**
+```
+Adopt PolicyTargetMixin for Image Row Actions
+```
+
+**Description:**
+```
+Replace hardcoded image.owner checks in image row actions with PolicyTargetMixin pattern to respect custom Glance RBAC policies.
+
+TECHNICAL DETAILS
+
+Current state: DeactivateImage, ReactivateImage, DeleteImage, EditImage all have hardcoded "image.owner == request.user.tenant_id" checks in their allowed() methods.
+
+Proposed change: Create ImagePolicyTargetMixin following the Volume panel pattern (openstack_dashboard/dashboards/project/volumes/tables.py line 47).
+
+Files affected: openstack_dashboard/dashboards/project/images/images/tables.py lines 135-300
+
+WHY DEFERRED
+
+Deferred to maintain consistency with existing pattern across 58+ image actions. Changing only DeactivateImage/ReactivateImage would be inconsistent with DeleteImage, EditImage, UpdateMetadata. Radomir Dopieralski accepted current approach for consistency and suggested PolicyTargetMixin as follow-up addressing all image actions together.
+
+REFERENCES
+
+Original review: https://review.opendev.org/c/openstack/horizon/+/986458
+Comment thread: CMT-RAD-1 (owner check discussion)
+Reviewer acceptance: CMT-RAD-3 ("Let's explore this in followup patches")
+Volume panel pattern: https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/volumes/tables.py#L47
+```
+
+---
+
+### Panel 2: Copy/Paste for Jira Web UI (Jira Wiki Format)
+
+**Project:** OSPRH  
+**Issue Type:** Story  
+**Parent:** OSPRH-16426  
+**Priority:** Medium  
+**Labels:** horizon, de-angularize, technical-debt
+
+**Summary:**
+```
+Adopt PolicyTargetMixin for Image Row Actions
+```
+
+**Description:** (Copy this into Jira's description field - it will render nicely)
+```
+Replace hardcoded image.owner checks in image row actions with PolicyTargetMixin pattern to respect custom Glance RBAC policies.
+
+h3. Technical Details
+
+* Current state: DeactivateImage, ReactivateImage, DeleteImage, EditImage all have hardcoded |image.owner == request.user.tenant_id| checks
+* Proposed change: Create ImagePolicyTargetMixin following Volume panel pattern (openstack_dashboard/dashboards/project/volumes/tables.py:47)
+* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:135-300
+
+h3. Why Deferred
+
+Deferred to maintain consistency with existing pattern across 58+ image actions. Changing only DeactivateImage/ReactivateImage would be inconsistent with DeleteImage, EditImage, UpdateMetadata. Radomir Dopieralski accepted current approach for consistency and suggested PolicyTargetMixin as follow-up addressing all image actions together.
+
+h3. References
+
+* Original review: https://review.opendev.org/c/openstack/horizon/+/986458
+* Comment thread: CMT-RAD-1 (owner check discussion)
+* Reviewer acceptance: CMT-RAD-3 ("Let's explore this in followup patches")
+* Volume panel pattern: https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/volumes/tables.py#L47
+```
+
+---
+
+### Panel 3: JSON Metadata for Automation
+
+For use with Jira REST API or CLI tools. Requires `JIRA_USER` and `JIRA_TOKEN` environment variables.
+
+**Using jira-cli tool:**
+```bash
+jira issue create \
+  --type Story \
+  --parent OSPRH-16426 \
+  --summary "Adopt PolicyTargetMixin for Image Row Actions" \
+  --body "$(cat <<'EOF'
+Replace hardcoded image.owner checks in image row actions with PolicyTargetMixin pattern to respect custom Glance RBAC policies.
+
+TECHNICAL DETAILS
+* Current state: DeactivateImage, ReactivateImage, DeleteImage, EditImage all have hardcoded image.owner checks
+* Proposed change: Create ImagePolicyTargetMixin following Volume panel pattern
+* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:135-300
+
+WHY DEFERRED
+Deferred to maintain consistency with existing pattern across 58+ image actions.
+
+REFERENCES
+https://review.opendev.org/c/openstack/horizon/+/986458
+EOF
+)" \
+  --priority Medium \
+  --label horizon \
+  --label de-angularize \
+  --label technical-debt
+```
+
+**Using curl with REST API:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -u "${JIRA_USER}:${JIRA_TOKEN}" \
+  https://redhat.atlassian.net/rest/api/2/issue \
+  -d @- <<'EOF'
+{
+  "fields": {
+    "project": {"key": "OSPRH"},
+    "summary": "Adopt PolicyTargetMixin for Image Row Actions",
+    "description": "Replace hardcoded image.owner checks in image row actions with PolicyTargetMixin pattern to respect custom Glance RBAC policies.\n\nh3. Technical Details\n\n* Current state: DeactivateImage, ReactivateImage, DeleteImage, EditImage all have hardcoded |image.owner == request.user.tenant_id| checks\n* Proposed change: Create ImagePolicyTargetMixin following Volume panel pattern (openstack_dashboard/dashboards/project/volumes/tables.py:47)\n* Files affected: openstack_dashboard/dashboards/project/images/images/tables.py:135-300\n\nh3. Why Deferred\n\nDeferred to maintain consistency with existing pattern across 58+ image actions. Changing only DeactivateImage/ReactivateImage would be inconsistent with DeleteImage, EditImage, UpdateMetadata. Radomir Dopieralski accepted current approach for consistency and suggested PolicyTargetMixin as follow-up addressing all image actions together.\n\nh3. References\n\n* Original review: https://review.opendev.org/c/openstack/horizon/+/986458\n* Comment thread: CMT-RAD-1 (owner check discussion)\n* Reviewer acceptance: CMT-RAD-3 (\"Let's explore this in followup patches\")\n* Volume panel pattern: https://github.com/openstack/horizon/blob/master/openstack_dashboard/dashboards/project/volumes/tables.py#L47",
+    "issuetype": {"name": "Story"},
+    "priority": {"name": "Medium"},
+    "labels": ["horizon", "de-angularize", "technical-debt"],
+    "parent": {"key": "OSPRH-16426"}
+  }
+}
+EOF
+```
+
+**Raw JSON metadata:**
 ```json
 {
   "parent_jira": "OSPRH-16426",
